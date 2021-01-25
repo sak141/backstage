@@ -1,7 +1,7 @@
 apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
-  name: www-artist
+  name: www-artist-test1
   description: Artist main website
   annotations:
     bitbucket.org/project-slug: sample
