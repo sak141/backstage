@@ -1,0 +1,12 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: www-sample1
+  description: sample1 main website
+  annotations:
+    bitbucket.org/project-slug: sample
+spec:
+  type: website
+  lifecycle: production
+  owner: team-a
+  system: artist-engagement-portal
