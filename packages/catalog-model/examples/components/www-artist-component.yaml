@@ -4,7 +4,7 @@ metadata:
   name: www-artist
   description: Artist main website
   annotations:
-    gitInsights/project-key: gitInsights/backstage-plugin-git-insights-sample
+    bitbucket/project-slug: sample-project
 spec:
   type: website
   lifecycle: production
