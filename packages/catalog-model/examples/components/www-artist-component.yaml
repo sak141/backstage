@@ -4,7 +4,7 @@ metadata:
   name: www-artist
   description: Artist main website
   annotations:
-    gitInsights/project-key: gitInsights/backstage-plugin-git-insights-sample
+    bitbucket.atlassian.com/repository: DS-SES/svc-payment-sales-order-v2
 spec:
   type: website
   lifecycle: production
