@@ -4,7 +4,7 @@ metadata:
   name: www-sample1
   description: sample1 main website
   annotations:
-    bitbucket.atlassian.com/repository: sample
+    bitbucket.atlassian.com/repository: sample/sample
 spec:
   type: website
   lifecycle: production
