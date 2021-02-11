@@ -6,7 +6,7 @@ metadata:
   annotations:
     bitbucket.atlassian.com/repository: DS-SES/svc-payment-sales-order-v2
     jira.atlassian.com/project-key: PAYMENT
-    bamboo.atlassian.com/build-plan-key: PAYM-SOV2
+    bamboo.atlassian.com/build-plan-key: MTW-MTWSUB
     bamboo.atlassian.com/deployment-project-id: '212205588'
     sonarqube.org/project-key: sample
   type: website
