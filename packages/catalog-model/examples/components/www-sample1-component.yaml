@@ -4,8 +4,11 @@ metadata:
   name: www-sample1
   description: sample1 main website
   annotations:
-    bitbucket.atlassian.com/repository: sample/sample
-spec:
+    bitbucket.atlassian.com/repository: DS-SES/svc-payment-sales-order-v2
+    jira.atlassian.com/project-key: PAYMENT
+    bamboo.atlassian.com/build-plan-key: PAYM-SOV2
+    bamboo.atlassian.com/deployment-project-id: '212205588'
+    sonarqube.org/project-key: sample
   type: website
   lifecycle: production
   owner: team-a
