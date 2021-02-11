@@ -16,3 +16,4 @@ metadata:
 spec:
   type: service
   owner: owner
+  lifecycle: production
