@@ -15,4 +15,4 @@ metadata:
   system: artist-engagement-portal
 spec:
   type: service
-  owner: team-toledo
+  owner: owner
