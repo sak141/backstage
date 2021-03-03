@@ -5,6 +5,7 @@ metadata:
   description: sample1 main website
   annotations:
     bitbucket.atlassian.com/repository: DS-SES/svc-payment-sales-order-v2
+    bitbucket.atlassian.com/project-readme-path: README.md
     jira.atlassian.com/project-key: PAYMENT
     bamboo.atlassian.com/build-plan-key: MTW-MTWSUB
     bamboo.atlassian.com/deployment-project-id: '212205588'
