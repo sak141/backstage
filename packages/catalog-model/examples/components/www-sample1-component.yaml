@@ -7,7 +7,7 @@ metadata:
     bitbucket.atlassian.com/repository: DS-SES/svc-payment-sales-order-v2
     bitbucket.atlassian.com/project-readme-path: README.md
     jira.atlassian.com/project-key: PAYMENT
-    bamboo.atlassian.com/build-plan-key: MTW-MTWSUB
+    bamboo.atlassian.com/build-plan-key: BTET-NEX
     bamboo.atlassian.com/deployment-project-id: '212205588'
     sonarqube.org/project-key: sample
   type: website
