@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import {
   ReadinessResponse,
   TechDocsMetadata,
 } from './types';
+import { getHeadersForFileExtension } from './helpers';
 
 // TODO: Use a more persistent storage than node_modules or /tmp directory.
 // Make it configurable with techdocs.publisher.local.publishDirectory
@@ -132,7 +133,16 @@ export class LocalPublish implements PublisherBase {
   }
 
   docsRouter(): express.Handler {
-    return express.static(staticDocsDir);
+    return express.static(staticDocsDir, {
+      // Handle content-type header the same as all other publishers.
+      setHeaders: (res, filePath) => {
+        const fileExtension = path.extname(filePath);
+        const headers = getHeadersForFileExtension(fileExtension);
+        for (const [header, value] of Object.entries(headers)) {
+          res.setHeader(header, value);
+        }
+      },
+    });
   }
 
   async hasDocsBeenGenerated(entity: Entity): Promise<boolean> {

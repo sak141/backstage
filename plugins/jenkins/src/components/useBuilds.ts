@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,10 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { errorApiRef, useApi } from '@backstage/core';
 import { useState } from 'react';
 import { useAsyncRetry } from 'react-use';
 import { jenkinsApiRef } from '../api';
+import { errorApiRef, useApi } from '@backstage/core-plugin-api';
+
+export enum ErrorType {
+  CONNECTION_ERROR,
+  NOT_FOUND,
+}
 
 export function useBuilds(projectName: string, branch?: string) {
   const api = useApi(jenkinsApiRef);
@@ -25,6 +30,10 @@ export function useBuilds(projectName: string, branch?: string) {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(5);
+  const [error, setError] = useState<{
+    message: string;
+    errorType: ErrorType;
+  }>();
 
   const restartBuild = async (buildName: string) => {
     try {
@@ -48,7 +57,10 @@ export function useBuilds(projectName: string, branch?: string) {
 
       return build || [];
     } catch (e) {
-      errorApi.post(e);
+      const errorType = e.notFound
+        ? ErrorType.NOT_FOUND
+        : ErrorType.CONNECTION_ERROR;
+      setError({ message: e.message, errorType });
       throw e;
     }
   }, [api, errorApi, projectName, branch]);
@@ -61,6 +73,7 @@ export function useBuilds(projectName: string, branch?: string) {
       builds,
       projectName,
       total,
+      error,
     },
     {
       builds,

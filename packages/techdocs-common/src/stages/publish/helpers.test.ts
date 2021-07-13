@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,18 @@ import { getFileTreeRecursively, getHeadersForFileExtension } from './helpers';
 
 describe('getHeadersForFileExtension', () => {
   const correctMapOfExtensions = [
-    ['.html', 'text/html; charset=utf-8'],
+    ['.html', 'text/plain; charset=utf-8'],
+    ['.htm', 'text/plain; charset=utf-8'],
+    ['.HTML', 'text/plain; charset=utf-8'],
+    ['.dhtml', 'text/plain; charset=utf-8'],
+    ['.xhtml', 'text/plain; charset=utf-8'],
+    ['.xml', 'text/plain; charset=utf-8'],
     ['.css', 'text/css; charset=utf-8'],
     ['.png', 'image/png'],
     ['.jpg', 'image/jpeg'],
     ['.jpeg', 'image/jpeg'],
-    ['.svg', 'image/svg+xml'],
+    ['.svg', 'text/plain; charset=utf-8'],
+    ['.SVG', 'text/plain; charset=utf-8'],
     ['.json', 'application/json; charset=utf-8'],
     ['.this-in-not-an-extension', 'text/plain; charset=utf-8'],
   ];

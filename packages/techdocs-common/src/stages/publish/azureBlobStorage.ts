@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -221,7 +221,8 @@ export class AzureBlobStoragePublish implements PublisherBase {
             .on('end', () => {
               resolve(Buffer.concat(fileStreamChunks));
             });
-        });
+        })
+        .catch(reject);
     });
   }
 
@@ -253,9 +254,9 @@ export class AzureBlobStoragePublish implements PublisherBase {
    */
   docsRouter(): express.Handler {
     return (req, res) => {
-      // Trim the leading forward slash
+      // Decode and trim the leading forward slash
       // filePath example - /default/Component/documented-component/index.html
-      const filePath = req.path.replace(/^\//, '');
+      const filePath = decodeURI(req.path.replace(/^\//, ''));
       // Files with different extensions (CSS, HTML) need to be served with different headers
       const fileExtension = platformPath.extname(filePath);
       const responseHeaders = getHeadersForFileExtension(fileExtension);
