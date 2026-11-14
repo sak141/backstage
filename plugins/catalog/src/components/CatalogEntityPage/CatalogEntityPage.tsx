@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
-import React from 'react';
-import { Outlet } from 'react-router';
-import { EntityLoaderProvider } from '../EntityLoaderProvider';
+import { Outlet } from 'react-router-dom';
+import { AsyncEntityProvider } from '@backstage/plugin-catalog-react';
+import { useEntityFromUrl } from './useEntityFromUrl';
 
-export const CatalogEntityPage = () => {
+/** @public */
+export function CatalogEntityPage() {
   return (
-    <EntityLoaderProvider>
+    <AsyncEntityProvider {...useEntityFromUrl()}>
       <Outlet />
-    </EntityLoaderProvider>
+    </AsyncEntityProvider>
   );
-};
+}

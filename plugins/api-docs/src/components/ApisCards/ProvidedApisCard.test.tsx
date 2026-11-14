@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,40 +15,35 @@
  */
 
 import { Entity, RELATION_PROVIDES_API } from '@backstage/catalog-model';
-import { ApiProvider, ApiRegistry } from '@backstage/core';
 import {
-  CatalogApi,
   catalogApiRef,
   EntityProvider,
+  entityRouteRef,
 } from '@backstage/plugin-catalog-react';
-import { renderInTestApp } from '@backstage/test-utils';
+import { renderInTestApp, TestApiProvider } from '@backstage/test-utils';
 import { waitFor } from '@testing-library/react';
-import React from 'react';
+import { PropsWithChildren, ComponentType, ReactNode } from 'react';
 import { ApiDocsConfig, apiDocsConfigRef } from '../../config';
 import { ProvidedApisCard } from './ProvidedApisCard';
+import { catalogApiMock } from '@backstage/plugin-catalog-react/testUtils';
 
 describe('<ProvidedApisCard />', () => {
   const apiDocsConfig: jest.Mocked<ApiDocsConfig> = {
     getApiDefinitionWidget: jest.fn(),
   } as any;
-  const catalogApi: jest.Mocked<CatalogApi> = {
-    getLocationById: jest.fn(),
-    getEntityByName: jest.fn(),
-    getEntities: jest.fn(),
-    addLocation: jest.fn(),
-    getLocationByEntity: jest.fn(),
-    removeEntityByUid: jest.fn(),
-  } as any;
-  let Wrapper: React.ComponentType;
+  const catalogApi = catalogApiMock.mock();
+  let Wrapper: ComponentType<PropsWithChildren<{}>>;
 
   beforeEach(() => {
-    const apis = ApiRegistry.with(catalogApiRef, catalogApi).with(
-      apiDocsConfigRef,
-      apiDocsConfig,
-    );
-
-    Wrapper = ({ children }: { children?: React.ReactNode }) => (
-      <ApiProvider apis={apis}>{children}</ApiProvider>
+    Wrapper = ({ children }: { children?: ReactNode }) => (
+      <TestApiProvider
+        apis={[
+          [catalogApiRef, catalogApi],
+          [apiDocsConfigRef, apiDocsConfig],
+        ]}
+      >
+        {children}
+      </TestApiProvider>
     );
   });
 
@@ -65,16 +60,28 @@ describe('<ProvidedApisCard />', () => {
       relations: [],
     };
 
-    const { getByText } = await renderInTestApp(
+    const { getByText, getByRole } = await renderInTestApp(
       <Wrapper>
         <EntityProvider entity={entity}>
           <ProvidedApisCard />
         </EntityProvider>
       </Wrapper>,
+      {
+        mountedRoutes: {
+          '/catalog/:namespace/:kind/:name': entityRouteRef,
+        },
+      },
     );
 
     expect(getByText(/Provided APIs/i)).toBeInTheDocument();
     expect(getByText(/does not provide any APIs/i)).toBeInTheDocument();
+    expect(getByText(/Learn how to change this/)).toBeInTheDocument();
+
+    const externalLink = getByRole('link');
+    expect(externalLink).toHaveAttribute(
+      'href',
+      'https://backstage.io/docs/features/software-catalog/descriptor-format#specprovidesapis-optional',
+    );
   });
 
   it('shows consumed APIs', async () => {
@@ -87,23 +94,23 @@ describe('<ProvidedApisCard />', () => {
       },
       relations: [
         {
-          target: {
-            kind: 'API',
-            namespace: 'my-namespace',
-            name: 'target-name',
-          },
+          targetRef: 'api:my-namespace/target-name',
           type: RELATION_PROVIDES_API,
         },
       ],
     };
-    catalogApi.getEntityByName.mockResolvedValue({
-      apiVersion: 'v1',
-      kind: 'API',
-      metadata: {
-        name: 'target-name',
-        namespace: 'my-namespace',
-      },
-      spec: {},
+    catalogApi.getEntitiesByRefs.mockResolvedValue({
+      items: [
+        {
+          apiVersion: 'v1',
+          kind: 'API',
+          metadata: {
+            name: 'target-name',
+            namespace: 'my-namespace',
+          },
+          spec: {},
+        },
+      ],
     });
 
     const { getByText } = await renderInTestApp(
@@ -112,6 +119,11 @@ describe('<ProvidedApisCard />', () => {
           <ProvidedApisCard />
         </EntityProvider>
       </Wrapper>,
+      {
+        mountedRoutes: {
+          '/catalog/:namespace/:kind/:name': entityRouteRef,
+        },
+      },
     );
 
     await waitFor(() => {

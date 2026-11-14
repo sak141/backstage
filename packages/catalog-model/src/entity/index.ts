@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,31 +14,13 @@
  * limitations under the License.
  */
 
-export {
-  ENTITY_DEFAULT_NAMESPACE,
-  ENTITY_META_GENERATED_FIELDS,
-  VIEW_URL_ANNOTATION,
-  EDIT_URL_ANNOTATION,
-} from './constants';
-export type {
-  Entity,
-  EntityLink,
-  EntityMeta,
-  EntityRelation,
-  EntityRelationSpec,
-} from './Entity';
+export * from './conditions';
+export * from './constants';
+export type { Entity, EntityLink, EntityMeta, EntityRelation } from './Entity';
+export type { EntityEnvelope } from './EntityEnvelope';
 export * from './policies';
 export {
-  compareEntityToRef,
-  getEntityName,
-  parseEntityName,
+  getCompoundEntityRef,
   parseEntityRef,
-  serializeEntityRef,
   stringifyEntityRef,
 } from './ref';
-export {
-  entityHasChanges,
-  generateEntityEtag,
-  generateEntityUid,
-  generateUpdatedEntity,
-} from './util';

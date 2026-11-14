@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ describe('SystemV1alpha1Validator', () => {
       spec: {
         owner: 'me',
         domain: 'domain',
+        type: 'system-type',
       },
     };
   });
@@ -83,5 +84,20 @@ describe('SystemV1alpha1Validator', () => {
   it('rejects empty domain', async () => {
     (entity as any).spec.domain = '';
     await expect(validator.check(entity)).rejects.toThrow(/domain/);
+  });
+
+  it('accepts missing type', async () => {
+    delete (entity as any).spec.type;
+    await expect(validator.check(entity)).resolves.toBe(true);
+  });
+
+  it('rejects wrong type', async () => {
+    (entity as any).spec.type = 7;
+    await expect(validator.check(entity)).rejects.toThrow(/type/);
+  });
+
+  it('rejects empty type', async () => {
+    (entity as any).spec.type = '';
+    await expect(validator.check(entity)).rejects.toThrow(/type/);
   });
 });

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,41 @@
  * limitations under the License.
  */
 
-// TODO: export searchApiRef from ./apis once interface is stable and settled.
+/**
+ * The Backstage plugin that provides your backstage app with search
+ *
+ * @packageDocumentation
+ */
+
+export type { HomePageSearchBarProps } from './components/HomePageComponent';
+
 export {
-  searchPlugin,
-  searchPlugin as plugin,
+  SearchModal,
+  SearchModalProvider,
+  useSearchModal,
+} from './components/SearchModal';
+export type {
+  SearchModalChildrenProps,
+  SearchModalProps,
+  SearchModalProviderProps,
+  SearchModalValue,
+} from './components/SearchModal';
+export { SearchPage as Router } from './components/SearchPage';
+export { SearchType } from './components/SearchType';
+export type {
+  SearchTypeAccordionProps,
+  SearchTypeTabsProps,
+  SearchTypeProps,
+} from './components/SearchType';
+export { SidebarSearch } from './components/SidebarSearch';
+export type { SidebarSearchProps } from './components/SidebarSearch';
+export type { SidebarSearchModalProps } from './components/SidebarSearchModal';
+
+export {
+  HomePageSearchBar,
   SearchPage,
-  SearchPageNext,
+  SidebarSearchModal,
+  searchPlugin as plugin,
+  searchPlugin,
 } from './plugin';
-export {
-  Filters,
-  FiltersButton,
-  SearchBar,
-  SearchPage as Router,
-  SearchResult,
-  SidebarSearch,
-} from './components';
-export type { FiltersState } from './components';
+export { searchTranslationRef } from './translation';

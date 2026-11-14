@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,17 +15,17 @@
  */
 
 import { ApiEntity } from '@backstage/catalog-model';
+import { defaultDefinitionWidgets } from './components/ApiDefinitionCard';
+import { apiDocsConfigRef } from './config';
+import { registerComponentRouteRef, rootRoute } from './routes';
 import {
   createApiFactory,
   createComponentExtension,
   createPlugin,
   createRoutableExtension,
-} from '@backstage/core';
-import { defaultDefinitionWidgets } from './components/ApiDefinitionCard';
-import { ApiExplorerPage as Page } from './components/ApiExplorerPage/ApiExplorerPage';
-import { apiDocsConfigRef } from './config';
-import { createComponentRouteRef, rootRoute } from './routes';
+} from '@backstage/core-plugin-api';
 
+/** @public */
 export const apiDocsPlugin = createPlugin({
   id: 'api-docs',
   routes: {
@@ -46,23 +46,24 @@ export const apiDocsPlugin = createPlugin({
     }),
   ],
   externalRoutes: {
-    createComponent: createComponentRouteRef,
-  },
-  register({ router }) {
-    router.addRoute(rootRoute, Page);
+    registerApi: registerComponentRouteRef,
   },
 });
 
+/** @public */
 export const ApiExplorerPage = apiDocsPlugin.provide(
   createRoutableExtension({
+    name: 'ApiExplorerPage',
     component: () =>
-      import('./components/ApiExplorerPage').then(m => m.ApiExplorerPage),
+      import('./components/ApiExplorerPage').then(m => m.ApiExplorerIndexPage),
     mountPoint: rootRoute,
   }),
 );
 
+/** @public */
 export const EntityApiDefinitionCard = apiDocsPlugin.provide(
   createComponentExtension({
+    name: 'EntityApiDefinitionCard',
     component: {
       lazy: () =>
         import('./components/ApiDefinitionCard').then(m => m.ApiDefinitionCard),
@@ -70,8 +71,10 @@ export const EntityApiDefinitionCard = apiDocsPlugin.provide(
   }),
 );
 
+/** @public */
 export const EntityConsumedApisCard = apiDocsPlugin.provide(
   createComponentExtension({
+    name: 'EntityConsumedApisCard',
     component: {
       lazy: () =>
         import('./components/ApisCards').then(m => m.ConsumedApisCard),
@@ -79,8 +82,10 @@ export const EntityConsumedApisCard = apiDocsPlugin.provide(
   }),
 );
 
+/** @public */
 export const EntityConsumingComponentsCard = apiDocsPlugin.provide(
   createComponentExtension({
+    name: 'EntityConsumingComponentsCard',
     component: {
       lazy: () =>
         import('./components/ComponentsCards').then(
@@ -90,8 +95,10 @@ export const EntityConsumingComponentsCard = apiDocsPlugin.provide(
   }),
 );
 
+/** @public */
 export const EntityProvidedApisCard = apiDocsPlugin.provide(
   createComponentExtension({
+    name: 'EntityProvidedApisCard',
     component: {
       lazy: () =>
         import('./components/ApisCards').then(m => m.ProvidedApisCard),
@@ -99,8 +106,10 @@ export const EntityProvidedApisCard = apiDocsPlugin.provide(
   }),
 );
 
+/** @public */
 export const EntityProvidingComponentsCard = apiDocsPlugin.provide(
   createComponentExtension({
+    name: 'EntityProvidingComponentsCard',
     component: {
       lazy: () =>
         import('./components/ComponentsCards').then(
@@ -110,8 +119,10 @@ export const EntityProvidingComponentsCard = apiDocsPlugin.provide(
   }),
 );
 
+/** @public */
 export const EntityHasApisCard = apiDocsPlugin.provide(
   createComponentExtension({
+    name: 'EntityHasApisCard',
     component: {
       lazy: () => import('./components/ApisCards').then(m => m.HasApisCard),
     },

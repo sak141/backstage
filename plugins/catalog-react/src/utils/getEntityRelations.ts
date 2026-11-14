@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,23 +14,30 @@
  * limitations under the License.
  */
 
-import { Entity, EntityName } from '@backstage/catalog-model';
+import {
+  Entity,
+  CompoundEntityRef,
+  parseEntityRef,
+} from '@backstage/catalog-model';
 
+// TODO(freben): This should be returning entity refs instead
 /**
  * Get the related entity references.
+ *
+ * @public
  */
 export function getEntityRelations(
   entity: Entity | undefined,
   relationType: string,
   filter?: { kind: string },
-): EntityName[] {
+): CompoundEntityRef[] {
   let entityNames =
     entity?.relations
       ?.filter(r => r.type === relationType)
-      ?.map(r => r.target) || [];
+      .map(r => parseEntityRef(r.targetRef)) || [];
 
   if (filter?.kind) {
-    entityNames = entityNames?.filter(
+    entityNames = entityNames.filter(
       e => e.kind.toLowerCase() === filter.kind.toLowerCase(),
     );
   }

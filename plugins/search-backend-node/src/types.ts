@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,62 +15,102 @@
  */
 
 import {
-  DocumentCollator,
-  DocumentDecorator,
-  IndexableDocument,
+  BackstageCredentials,
+  LoggerService,
+  SchedulerServiceTaskRunner,
+} from '@backstage/backend-plugin-api';
+import {
+  DocumentCollatorFactory,
+  DocumentDecoratorFactory,
+  IndexableResultSet,
   SearchQuery,
-  SearchResultSet,
-} from '@backstage/search-common';
+} from '@backstage/plugin-search-common';
+import { Writable } from 'node:stream';
+
+/**
+ * Options required to instantiate the index builder.
+ * @public
+ */
+export type IndexBuilderOptions = {
+  searchEngine: SearchEngine;
+  logger: LoggerService;
+};
 
 /**
  * Parameters required to register a collator.
+ * @public
  */
 export interface RegisterCollatorParameters {
   /**
-   * The type of document to be indexed (used to name indices, to configure refresh loop, etc).
+   * The schedule for which the provided collator will be called, commonly the result of
+   * {@link @backstage/backend-plugin-api#SchedulerService.createScheduledTaskRunner}
    */
-  type: string;
-
+  schedule: SchedulerServiceTaskRunner;
   /**
-   * The default interval (in seconds) that the provided collator will be called (can be overridden in config).
+   * The class responsible for returning the document collator of the given type.
    */
-  defaultRefreshIntervalSeconds: number;
-
-  /**
-   * The collator class responsible for returning all documents of the given type.
-   */
-  collator: DocumentCollator;
+  factory: DocumentCollatorFactory;
 }
 
 /**
  * Parameters required to register a decorator
+ * @public
  */
 export interface RegisterDecoratorParameters {
   /**
-   * The decorator class responsible for appending or modifying documents of the given type(s).
+   * The class responsible for returning the decorator which appends, modifies, or filters documents.
    */
-  decorator: DocumentDecorator;
-
-  /**
-   * (Optional) An array of document types that the given decorator should apply to. If none are provided,
-   * the decorator will be applied to all types.
-   */
-  types?: string[];
+  factory: DocumentDecoratorFactory;
 }
 
 /**
  * A type of function responsible for translating an abstract search query into
  * a concrete query relevant to a particular search engine.
+ * @public
  */
 export type QueryTranslator = (query: SearchQuery) => unknown;
+
+/**
+ * Options when querying a search engine.
+ * @public
+ */
+export type QueryRequestOptions =
+  | {
+      /** @deprecated use the `credentials` option instead. */
+      token?: string;
+    }
+  | {
+      credentials: BackstageCredentials;
+    };
 
 /**
  * Interface that must be implemented by specific search engines, responsible
  * for performing indexing and querying and translating abstract queries into
  * concrete, search engine-specific queries.
+ * @public
  */
 export interface SearchEngine {
-  translator: QueryTranslator;
-  index(type: string, documents: IndexableDocument[]): void;
-  query(query: SearchQuery): Promise<SearchResultSet>;
+  /**
+   * Override the default translator provided by the SearchEngine.
+   */
+  setTranslator(translator: QueryTranslator): void;
+
+  /**
+   * Factory method for getting a search engine indexer for a given document
+   * type.
+   *
+   * @param type - The type or name of the document set for which an indexer
+   *   should be retrieved. This corresponds to the `type` property on the
+   *   document collator/decorator factories and will most often be used to
+   *   identify an index or group to which documents should be written.
+   */
+  getIndexer(type: string): Promise<Writable>;
+
+  /**
+   * Perform a search query against the SearchEngine.
+   */
+  query(
+    query: SearchQuery,
+    options?: QueryRequestOptions,
+  ): Promise<IndexableResultSet>;
 }

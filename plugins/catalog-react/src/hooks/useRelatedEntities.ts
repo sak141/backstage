@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,44 +13,52 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Entity } from '@backstage/catalog-model';
-import { useApi } from '@backstage/core';
-import { useAsync } from 'react-use';
+
+import { Entity, parseEntityRef } from '@backstage/catalog-model';
+import { useApi } from '@backstage/core-plugin-api';
+import useAsync from 'react-use/esm/useAsync';
 import { catalogApiRef } from '../api';
 
+/**
+ * Fetches all entities that appear in the entity's relations, optionally
+ * filtered by relation type and kind.
+ *
+ * @public
+ */
 export function useRelatedEntities(
   entity: Entity,
-  { type, kind }: { type?: string; kind?: string },
+  relationFilter: { type?: string; kind?: string },
 ): {
   entities: Entity[] | undefined;
   loading: boolean;
   error: Error | undefined;
 } {
+  const filterByTypeLower = relationFilter?.type?.toLowerCase();
+  const filterByKindLower = relationFilter?.kind?.toLowerCase();
   const catalogApi = useApi(catalogApiRef);
-  const { loading, value: entities, error } = useAsync(async () => {
-    const relations =
-      entity.relations &&
-      entity.relations.filter(
-        r =>
-          (!type || r.type.toLowerCase() === type.toLowerCase()) &&
-          (!kind || r.target.kind.toLowerCase() === kind.toLowerCase()),
-      );
 
-    if (!relations) {
+  const {
+    loading,
+    value: entities,
+    error,
+  } = useAsync(async () => {
+    const relations = entity.relations?.filter(
+      r =>
+        (!filterByTypeLower || r.type.toLowerCase() === filterByTypeLower) &&
+        (!filterByKindLower ||
+          parseEntityRef(r.targetRef).kind === filterByKindLower),
+    );
+
+    if (!relations?.length) {
       return [];
     }
 
-    // TODO: This code could be more efficient if there was an endpoint in the
-    // backend that either returns the relations of entity (filtered by type)
-    // or if there is a way to perform a batch request by entity name. However,
-    // such an implementation would probably be better placed in the graphql API.
-    const results = await Promise.all(
-      relations?.map(r => catalogApi.getEntityByName(r.target)),
-    );
-    // Skip entities that where not found, for example if a relation references
-    // an entity that doesn't exist.
-    return results.filter(e => e) as Entity[];
-  }, [entity, type]);
+    const { items } = await catalogApi.getEntitiesByRefs({
+      entityRefs: relations.map(r => r.targetRef),
+    });
+
+    return items.filter((x): x is Entity => Boolean(x));
+  }, [entity, filterByTypeLower, filterByKindLower]);
 
   return {
     entities,

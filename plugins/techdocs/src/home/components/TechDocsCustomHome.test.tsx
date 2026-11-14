@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,38 @@
  * limitations under the License.
  */
 
-import { ApiProvider, ApiRegistry } from '@backstage/core';
-import { CatalogApi, catalogApiRef } from '@backstage/plugin-catalog-react';
-import { renderInTestApp } from '@backstage/test-utils';
+import {
+  catalogApiRef,
+  starredEntitiesApiRef,
+  MockStarredEntitiesApi,
+} from '@backstage/plugin-catalog-react';
+import { ContentHeader, PageWithHeader } from '@backstage/core-components';
+import { catalogApiMock } from '@backstage/plugin-catalog-react/testUtils';
+import { renderInTestApp, TestApiRegistry } from '@backstage/test-utils';
 import { screen } from '@testing-library/react';
-import React from 'react';
+import { PropsWithChildren } from 'react';
 import { TechDocsCustomHome, PanelType } from './TechDocsCustomHome';
+import { ApiProvider } from '@backstage/core-app-api';
+import { rootDocsRouteRef } from '../../routes';
+
+const mockCatalogApi = catalogApiMock({
+  entities: [
+    {
+      apiVersion: 'version',
+      kind: 'User',
+      metadata: {
+        name: 'owned',
+        namespace: 'default',
+      },
+    },
+  ],
+});
 
 describe('TechDocsCustomHome', () => {
-  const catalogApi: Partial<CatalogApi> = {
-    getEntities: async () => ({ items: [] }),
-  };
-
-  const apiRegistry = ApiRegistry.with(catalogApiRef, catalogApi);
+  const apiRegistry = TestApiRegistry.from(
+    [catalogApiRef, mockCatalogApi],
+    [starredEntitiesApiRef, new MockStarredEntitiesApi()],
+  );
 
   it('should render a TechDocs home page', async () => {
     const tabsConfig = [
@@ -58,6 +77,11 @@ describe('TechDocsCustomHome', () => {
       <ApiProvider apis={apiRegistry}>
         <TechDocsCustomHome tabsConfig={tabsConfig} />
       </ApiProvider>,
+      {
+        mountedRoutes: {
+          '/docs/:namespace/:kind/:name/*': rootDocsRouteRef,
+        },
+      },
     );
 
     // Header
@@ -79,5 +103,81 @@ describe('TechDocsCustomHome', () => {
     expect(
       await screen.findByText('Second Tab Description'),
     ).toBeInTheDocument();
+  });
+  it('should render ContentHeader based on CustomHeader prop', async () => {
+    const tabsConfig = [
+      {
+        label: 'First Tab',
+        panels: [
+          {
+            title: 'First Tab',
+            description: 'First Tab Description',
+            panelType: 'DocsCardGrid' as PanelType,
+            panelProps: {
+              CustomHeader: () => (
+                <ContentHeader
+                  title="Custom Header"
+                  description="useful docs"
+                />
+              ),
+            },
+            filterPredicate: () => true,
+          },
+        ],
+      },
+    ];
+
+    await renderInTestApp(
+      <ApiProvider apis={apiRegistry}>
+        <TechDocsCustomHome tabsConfig={tabsConfig} />
+      </ApiProvider>,
+      {
+        mountedRoutes: {
+          '/docs/:namespace/:kind/:name/*': rootDocsRouteRef,
+        },
+      },
+    );
+
+    expect(screen.getByText('Custom Header')).toBeInTheDocument();
+  });
+  it('should render CustomPageWrapper', async () => {
+    const tabsConfig = [
+      {
+        label: 'First Tab',
+        panels: [
+          {
+            title: 'First Tab',
+            description: 'First Tab Description',
+            panelType: 'DocsCardGrid' as PanelType,
+            filterPredicate: () => true,
+          },
+        ],
+      },
+    ];
+
+    await renderInTestApp(
+      <ApiProvider apis={apiRegistry}>
+        <TechDocsCustomHome
+          tabsConfig={tabsConfig}
+          CustomPageWrapper={({ children }: PropsWithChildren<{}>) => (
+            <PageWithHeader
+              title="Custom Title"
+              subtitle="Custom Subtitle"
+              themeId="documentation"
+            >
+              {children}
+            </PageWithHeader>
+          )}
+        />
+      </ApiProvider>,
+      {
+        mountedRoutes: {
+          '/docs/:namespace/:kind/:name/*': rootDocsRouteRef,
+        },
+      },
+    );
+
+    expect(screen.getByText('Custom Title')).toBeInTheDocument();
+    expect(screen.getByText('Custom Subtitle')).toBeInTheDocument();
   });
 });

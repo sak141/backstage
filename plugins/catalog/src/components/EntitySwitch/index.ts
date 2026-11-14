@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,4 +15,13 @@
  */
 
 export { EntitySwitch } from './EntitySwitch';
-export { isKind, isNamespace, isComponentType } from './conditions';
+export type { EntitySwitchProps, EntitySwitchCaseProps } from './EntitySwitch';
+export type { EntityPredicates } from './conditions';
+export {
+  isKind,
+  isNamespace,
+  isComponentType,
+  isResourceType,
+  isApiType,
+  isEntityWith,
+} from './conditions';

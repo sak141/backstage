@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,77 +16,96 @@
 
 import { ComponentEntity, RELATION_HAS_PART } from '@backstage/catalog-model';
 import {
-  CodeSnippet,
-  InfoCard,
-  Link,
-  Progress,
-  WarningPanel,
-} from '@backstage/core';
-import { Typography } from '@material-ui/core';
+  InfoCardVariants,
+  TableColumn,
+  TableOptions,
+} from '@backstage/core-components';
 import {
-  EntityTable,
-  useEntity,
-  useRelatedEntities,
-} from '@backstage/plugin-catalog-react';
-import React from 'react';
+  EntityRelationCard,
+  EntityColumnConfig,
+  entityColumnPresets,
+} from '@backstage/plugin-catalog-react/alpha';
+import {
+  asComponentEntities,
+  componentEntityColumns,
+  RelatedEntitiesCard,
+} from '../RelatedEntitiesCard';
+import { catalogTranslationRef } from '../../alpha/translation';
+import { useTranslationRef } from '@backstage/core-plugin-api/alpha';
 
-type Props = {
-  variant?: 'gridItem';
-};
+/** @public */
+export interface HasSubcomponentsCardProps {
+  title?: string;
+  columnConfig?: EntityColumnConfig[];
+  kind?: string;
+}
 
-const columns = [
-  EntityTable.columns.createEntityRefColumn({ defaultKind: 'component' }),
-  EntityTable.columns.createOwnerColumn(),
-  EntityTable.columns.createSpecTypeColumn(),
-  EntityTable.columns.createSpecLifecycleColumn(),
-  EntityTable.columns.createMetadataDescriptionColumn(),
-];
+/**
+ * Props for the legacy MUI-based rendering.
+ * @deprecated Use {@link HasSubcomponentsCardProps} instead.
+ * @public
+ */
+export interface HasSubcomponentsCardLegacyProps {
+  title?: string;
+  /** @deprecated Use `columnConfig` instead. */
+  variant?: InfoCardVariants;
+  /** @deprecated Use `columnConfig` instead. */
+  columns?: TableColumn<ComponentEntity>[];
+  /** @deprecated Use `columnConfig` instead. */
+  tableOptions?: TableOptions;
+  kind?: string;
+}
 
-export const HasSubcomponentsCard = ({ variant = 'gridItem' }: Props) => {
-  const { entity } = useEntity();
-  const { entities, loading, error } = useRelatedEntities(entity, {
-    type: RELATION_HAS_PART,
-    kind: 'Component',
-  });
+function isLegacyProps(
+  props: HasSubcomponentsCardProps | HasSubcomponentsCardLegacyProps,
+): props is HasSubcomponentsCardLegacyProps {
+  return 'variant' in props || 'columns' in props || 'tableOptions' in props;
+}
 
-  if (loading) {
+export function HasSubcomponentsCard(
+  props: HasSubcomponentsCardProps | HasSubcomponentsCardLegacyProps,
+) {
+  const { t } = useTranslationRef(catalogTranslationRef);
+
+  if (isLegacyProps(props)) {
+    const {
+      variant = 'gridItem',
+      title = t('hasSubcomponentsCard.title'),
+      columns = componentEntityColumns,
+      tableOptions = {},
+      kind = 'Component',
+    } = props;
     return (
-      <InfoCard variant={variant} title="Subcomponents">
-        <Progress />
-      </InfoCard>
+      <RelatedEntitiesCard
+        variant={variant}
+        title={title}
+        entityKind={kind}
+        relationType={RELATION_HAS_PART}
+        columns={columns}
+        asRenderableEntities={asComponentEntities}
+        emptyMessage={t('hasSubcomponentsCard.emptyMessage')}
+        emptyHelpLink="https://backstage.io/docs/features/software-catalog/descriptor-format#specsubcomponentof-optional"
+        tableOptions={tableOptions}
+      />
     );
   }
 
-  if (error || !entities) {
-    return (
-      <InfoCard variant={variant} title="Subcomponents">
-        <WarningPanel
-          severity="error"
-          title="Could not load subcomponents"
-          message={<CodeSnippet text={`${error}`} language="text" />}
-        />
-      </InfoCard>
-    );
-  }
-
+  const {
+    title = t('hasSubcomponentsCard.title'),
+    columnConfig = entityColumnPresets.component.columns,
+    kind = 'Component',
+  } = props;
   return (
-    <EntityTable
-      title="Subcomponents"
-      variant={variant}
-      emptyContent={
-        <div style={{ textAlign: 'center' }}>
-          <Typography variant="body1">
-            No subcomponent is part of this component.
-          </Typography>
-          <Typography variant="body2">
-            <Link to="https://backstage.io/docs/features/software-catalog/descriptor-format#specsubcomponentof-optional">
-              Learn how to change this.
-            </Link>
-          </Typography>
-        </div>
-      }
-      columns={columns}
-      entities={entities as ComponentEntity[]}
+    <EntityRelationCard
+      title={title}
+      entityKind={kind}
+      relationType={RELATION_HAS_PART}
+      columnConfig={columnConfig}
+      emptyState={{
+        message: t('hasSubcomponentsCard.emptyMessage'),
+        helpLink:
+          'https://backstage.io/docs/features/software-catalog/descriptor-format#specsubcomponentof-optional',
+      }}
     />
   );
-};
+}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,4 +14,10 @@
  * limitations under the License.
  */
 
-export * from './service/router';
+/**
+ * The Backstage backend plugin that provides your backstage app with search
+ *
+ * @packageDocumentation
+ */
+
+export { default } from './plugin';

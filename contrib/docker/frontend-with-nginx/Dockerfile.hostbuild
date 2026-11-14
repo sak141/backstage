@@ -8,7 +8,6 @@
 # simply copies in the build output into the image. If you want to also perform
 # the build itself inside docker, use Dockerfile.build in this folder instead.
 
-
 # USAGE:
 #
 # - Copy this file and the "docker" folder from this directory to your project
@@ -23,7 +22,7 @@
 #
 #       yarn install
 #       yarn tsc
-#       yarn build --config <config1> --config <config2> ...
+#       yarn workspace app build --config <config1> --config <config2> ...
 #       docker build -t backstage-frontend -f Dockerfile.hostbuild .
 
 
@@ -33,9 +32,8 @@ FROM nginx:mainline
 RUN apt-get update && apt-get -y install jq && rm -rf /var/lib/apt/lists/*
 
 COPY packages/app/dist /usr/share/nginx/html
-COPY docker/default.conf.template /etc/nginx/conf.d/default.conf.template
-COPY docker/run.sh /usr/local/bin/run.sh
+COPY docker/default.conf.template /etc/nginx/templates/default.conf.template
 
-CMD run.sh
+COPY docker/inject-config.sh /docker-entrypoint.d/40-inject-config.sh
 
-ENV PORT 80
+ENV PORT=80

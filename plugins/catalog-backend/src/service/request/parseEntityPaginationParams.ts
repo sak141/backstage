@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,20 +15,21 @@
  */
 
 import { InputError } from '@backstage/errors';
-import { EntityPagination } from '../../database';
-import { parseIntegerParam, parseStringParam } from './common';
+import { EntityPagination } from '../../catalog/types';
 
 /**
  * Parses the pagination related parameters out of a query, e.g.
  * /entities?offset=100&limit=10
  */
-export function parseEntityPaginationParams(
-  params: Record<string, unknown>,
-): EntityPagination | undefined {
-  const offset = parseIntegerParam(params.offset, 'offset');
-  const limit = parseIntegerParam(params.limit, 'limit');
-  const after = parseStringParam(params.after, 'after');
-
+export function parseEntityPaginationParams({
+  limit,
+  offset,
+  after,
+}: {
+  offset?: number;
+  limit?: number;
+  after?: string;
+}): EntityPagination | undefined {
   if (offset === undefined && limit === undefined && after === undefined) {
     return undefined;
   }

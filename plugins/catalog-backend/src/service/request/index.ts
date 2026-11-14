@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
+export { entitiesBatchRequest } from './entitiesBatchRequest';
 export { basicEntityFilter } from './basicEntityFilter';
+export { entityFilterToFilterPredicate } from './entityFilterToFilterPredicate';
 export { parseEntityFilterParams } from './parseEntityFilterParams';
-export { parseEntityPaginationParams } from './parseEntityPaginationParams';
 export { parseEntityTransformParams } from './parseEntityTransformParams';
+export { parseQueryEntitiesParams } from './parseQueryEntitiesParams';

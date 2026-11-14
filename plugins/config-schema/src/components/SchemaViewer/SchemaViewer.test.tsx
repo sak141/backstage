@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 import { render, screen } from '@testing-library/react';
 import { Schema } from 'jsonschema';
-import React from 'react';
 import { SchemaViewer } from './SchemaViewer';
 
 describe('SchemaViewer', () => {

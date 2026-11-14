@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,60 +13,80 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import { SearchClient } from './apis';
+import { searchApiRef } from '@backstage/plugin-search-react';
 import {
   createApiFactory,
   createPlugin,
   createRouteRef,
   createRoutableExtension,
   discoveryApiRef,
-} from '@backstage/core';
-import { SearchClient, searchApiRef } from './apis';
-import { catalogApiRef } from '@backstage/plugin-catalog-react';
-import { SearchPage as SearchPageComponent } from './components/SearchPage';
-import { SearchPageNext as SearchPageNextComponent } from './components/SearchPageNext';
+  createComponentExtension,
+  fetchApiRef,
+} from '@backstage/core-plugin-api';
+import { SidebarSearchModalProps } from './components/SidebarSearchModal';
 
 export const rootRouteRef = createRouteRef({
-  path: '/search',
-  title: 'search',
+  id: 'search',
 });
 
-export const rootNextRouteRef = createRouteRef({
-  path: '/search-next',
-  title: 'search',
-});
-
+/**
+ * @public
+ */
 export const searchPlugin = createPlugin({
   id: 'search',
   apis: [
     createApiFactory({
       api: searchApiRef,
-      deps: { catalogApi: catalogApiRef, discoveryApi: discoveryApiRef },
-      factory: ({ catalogApi, discoveryApi }) => {
-        return new SearchClient({ catalogApi, discoveryApi });
+      deps: { discoveryApi: discoveryApiRef, fetchApi: fetchApiRef },
+      factory: ({ discoveryApi, fetchApi }) => {
+        return new SearchClient({ discoveryApi, fetchApi });
       },
     }),
   ],
-  register({ router }) {
-    router.addRoute(rootRouteRef, SearchPageComponent);
-    router.addRoute(rootNextRouteRef, SearchPageNextComponent);
-  },
   routes: {
     root: rootRouteRef,
-    nextRoot: rootNextRouteRef,
   },
 });
 
+/**
+ * @public
+ */
 export const SearchPage = searchPlugin.provide(
   createRoutableExtension({
+    name: 'SearchPage',
     component: () => import('./components/SearchPage').then(m => m.SearchPage),
     mountPoint: rootRouteRef,
   }),
 );
 
-export const SearchPageNext = searchPlugin.provide(
-  createRoutableExtension({
-    component: () =>
-      import('./components/SearchPageNext').then(m => m.SearchPageNext),
-    mountPoint: rootNextRouteRef,
+/**
+ * @public
+ */
+export const SidebarSearchModal = searchPlugin.provide<
+  (props: SidebarSearchModalProps) => JSX.Element | null
+>(
+  createComponentExtension({
+    name: 'SidebarSearchModal',
+    component: {
+      lazy: () =>
+        import('./components/SidebarSearchModal').then(
+          m => m.SidebarSearchModal,
+        ),
+    },
+  }),
+);
+
+/**
+ * @public
+ */
+export const HomePageSearchBar = searchPlugin.provide(
+  createComponentExtension({
+    name: 'HomePageSearchBar',
+    component: {
+      lazy: () =>
+        import('./components/HomePageComponent').then(m => m.HomePageSearchBar),
+    },
   }),
 );

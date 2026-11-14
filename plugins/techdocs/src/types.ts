@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,23 @@
  * limitations under the License.
  */
 
-export type TechDocsMetadata = {
-  site_name: string;
-  site_description: string;
-};
+import { CompoundEntityRef } from '@backstage/catalog-model';
+import {
+  TechDocsEntityMetadata,
+  TechDocsMetadata,
+} from '@backstage/plugin-techdocs-react';
+
+/**
+ * Helper function that gives the children of {@link TechDocsReaderPage} access to techdocs and entity metadata
+ *
+ * @public
+ */
+export type TechDocsReaderPageRenderFunction = (options: {
+  techdocsMetadataValue?: TechDocsMetadata | undefined;
+  entityMetadataValue?: TechDocsEntityMetadata | undefined;
+  entityRef: CompoundEntityRef;
+  /**
+   * @deprecated You can continue pass this property, but directly to the `TechDocsReaderPageContent` component.
+   */
+  onReady?: () => void;
+}) => JSX.Element;

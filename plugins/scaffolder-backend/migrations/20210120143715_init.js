@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,7 +75,7 @@ exports.up = async function up(knex) {
  * @param {import('knex').Knex} knex
  */
 exports.down = async function down(knex) {
-  if (knex.client.config.client !== 'sqlite3') {
+  if (!knex.client.config.client.includes('sqlite3')) {
     await knex.schema.alterTable('task_events', table => {
       table.dropIndex([], 'task_events_task_id_idx');
     });

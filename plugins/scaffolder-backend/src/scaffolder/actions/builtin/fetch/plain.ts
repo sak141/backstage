@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,61 +14,84 @@
  * limitations under the License.
  */
 
-import path from 'path';
-import { UrlReader } from '@backstage/backend-common';
-import { InputError } from '@backstage/errors';
+import {
+  resolveSafeChildPath,
+  UrlReaderService,
+} from '@backstage/backend-plugin-api';
 import { ScmIntegrations } from '@backstage/integration';
-import { fetchContents } from './helpers';
-import { createTemplateAction } from '../../createTemplateAction';
+import { examples } from './plain.examples';
+import { assertScmUserCredentials } from './assertScmUserCredentials';
 
+import {
+  createTemplateAction,
+  fetchContents,
+} from '@backstage/plugin-scaffolder-node';
+
+export const ACTION_ID = 'fetch:plain';
+
+/**
+ * Downloads content and places it in the workspace, or optionally
+ * in a subdirectory specified by the 'targetPath' input option.
+ * @public
+ */
 export function createFetchPlainAction(options: {
-  reader: UrlReader;
+  reader: UrlReaderService;
   integrations: ScmIntegrations;
+  requireScmUserCredentials?: boolean;
 }) {
-  const { reader, integrations } = options;
+  const { reader, integrations, requireScmUserCredentials } = options;
 
-  return createTemplateAction<{ url: string; targetPath?: string }>({
-    id: 'fetch:plain',
+  return createTemplateAction({
+    id: ACTION_ID,
+    examples,
     description:
-      "Downloads content and places it in the workspace, or optionally in a subdirectory specified by the 'targetPath' input option.",
+      'Downloads content and places it in the workspace, or optionally in a subdirectory specified by the `targetPath` input option.',
     schema: {
       input: {
-        type: 'object',
-        required: ['url'],
-        properties: {
-          url: {
-            title: 'Fetch URL',
+        url: z =>
+          z.string({
             description:
               'Relative path or absolute URL pointing to the directory tree to fetch',
-            type: 'string',
-          },
-          targetPath: {
-            title: 'Target Path',
-            description:
-              'Target path within the working directory to download the contents to.',
-            type: 'string',
-          },
-        },
+          }),
+        targetPath: z =>
+          z
+            .string({
+              description:
+                'Target path within the working directory to download the contents to.',
+            })
+            .optional(),
+        token: z =>
+          z
+            .string({
+              description:
+                'An optional token to use for authentication when reading the resources.',
+            })
+            .optional(),
       },
     },
+    supportsDryRun: true,
     async handler(ctx) {
       ctx.logger.info('Fetching plain content from remote URL');
 
       // Finally move the template result into the task workspace
       const targetPath = ctx.input.targetPath ?? './';
-      const outputPath = path.resolve(ctx.workspacePath, targetPath);
-      if (!outputPath.startsWith(ctx.workspacePath)) {
-        throw new InputError(
-          `Fetch action targetPath may not specify a path outside the working directory`,
-        );
-      }
+      const outputPath = resolveSafeChildPath(ctx.workspacePath, targetPath);
+
+      assertScmUserCredentials({
+        integrations,
+        requireScmUserCredentials,
+        url: ctx.input.url,
+        baseUrl: ctx.templateInfo?.baseUrl,
+        token: ctx.input.token,
+      });
 
       await fetchContents({
         reader,
         integrations,
-        baseUrl: ctx.baseUrl,
+        baseUrl: ctx.templateInfo?.baseUrl,
         fetchUrl: ctx.input.url,
         outputPath,
+        token: ctx.input.token,
       });
     },
   });

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ exports.up = async function up(knex) {
   // Adds a single 'bootstrap' location that can be used to trigger work in processors.
   // This is primarily here to fulfill foreign key constraints.
   await knex('locations').insert({
-    id: require('uuid').v4(),
+    id: require('node:crypto').randomUUID(),
     type: 'bootstrap',
     target: 'bootstrap',
   });

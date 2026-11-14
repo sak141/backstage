@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ describe('AzureIntegration', () => {
           azure: [
             {
               host: 'h.com',
-              token: 'token',
+              credentials: [{ personalAccessToken: 'token' }],
             },
           ],
         },
@@ -51,8 +51,7 @@ describe('AzureIntegration', () => {
       expect(
         integration.resolveUrl({
           url: '../a.yaml',
-          base:
-            'https://dev.azure.com/organization/project/_git/repository?path=%2Ffolder%2Fcatalog-info.yaml',
+          base: 'https://dev.azure.com/organization/project/_git/repository?path=%2Ffolder%2Fcatalog-info.yaml',
         }),
       ).toBe(
         'https://dev.azure.com/organization/project/_git/repository?path=%2Fa.yaml',
@@ -61,28 +60,47 @@ describe('AzureIntegration', () => {
       expect(
         integration.resolveUrl({
           url: '/a.yaml',
-          base:
-            'https://dev.azure.com/organization/project/_git/repository?path=%2Ffolder%2Fcatalog-info.yaml',
+          base: 'https://internal.com/organization/project/_git/repository?path=%2Ffolder%2Fcatalog-info.yaml',
           lineNumber: 14,
         }),
       ).toBe(
-        'https://dev.azure.com/organization/project/_git/repository?path=%2Fa.yaml&line=14&lineEnd=15&lineStartColumn=1&lineEndColumn=1',
+        'https://internal.com/organization/project/_git/repository?path=%2Fa.yaml&line=14&lineEnd=15&lineStartColumn=1&lineEndColumn=1',
       );
 
       expect(
         integration.resolveUrl({
           url: './a.yaml',
-          base: 'https://dev.azure.com/organization/project/_git/repository',
+          base: 'https://dev.azure.com/organization/_git/project',
+        }),
+      ).toBe('https://dev.azure.com/organization/_git/project?path=%2Fa.yaml');
+
+      expect(
+        integration.resolveUrl({
+          url: 'https://dev.azure.com/organization/_git/project?path=%2Fa.yaml',
+          base: 'https://dev.azure.com/organization/_git/project',
+        }),
+      ).toBe('https://dev.azure.com/organization/_git/project?path=%2Fa.yaml');
+
+      expect(
+        integration.resolveUrl({
+          url: 'https://dev.azure.com/other-organization/_git/other-project?path=%2Fa.yaml',
+          base: 'https://dev.azure.com/organization/_git/project',
         }),
       ).toBe(
-        'https://dev.azure.com/organization/project/_git/repository?path=%2Fa.yaml',
+        'https://dev.azure.com/other-organization/_git/other-project?path=%2Fa.yaml',
       );
 
       expect(
         integration.resolveUrl({
+          url: './a.yaml',
+          base: 'http://not-azure.com/organization/_git/project',
+        }),
+      ).toBe('http://not-azure.com/organization/_git/project?path=%2Fa.yaml');
+
+      expect(
+        integration.resolveUrl({
           url: 'https://absolute.com/path',
-          base:
-            'https://dev.azure.com/organization/project/_git/repository?path=%2Fcatalog-info.yaml',
+          base: 'https://dev.azure.com/organization/project/_git/repository?path=%2Fcatalog-info.yaml',
         }),
       ).toBe('https://absolute.com/path');
     });
@@ -101,17 +119,45 @@ describe('AzureIntegration', () => {
     });
   });
 
-  it('resolve edit URL', () => {
+  it('resolves edit URLs for repository files', () => {
     const integration = new AzureIntegration({ host: 'h.com' } as any);
 
-    // TODO: The Azure integration doesn't support resolving an edit URL yet,
-    // instead we keep the input URL.
     expect(
       integration.resolveEditUrl(
         'https://dev.azure.com/organization/project/_git/repository?path=%2Fcatalog-info.yaml',
       ),
     ).toBe(
-      'https://dev.azure.com/organization/project/_git/repository?path=%2Fcatalog-info.yaml',
+      'https://dev.azure.com/organization/project/_git/repository?path=%2Fcatalog-info.yaml&_a=edit',
     );
+
+    expect(
+      integration.resolveEditUrl(
+        'https://dev.azure.com/organization/project/_git/repository?path=%2Fcatalog-info.yaml&version=GBmain&_a=contents',
+      ),
+    ).toBe(
+      'https://dev.azure.com/organization/project/_git/repository?path=%2Fcatalog-info.yaml&version=GBmain&_a=edit',
+    );
+  });
+
+  it('keeps non-file and non-repository edit URLs unchanged', () => {
+    const integration = new AzureIntegration({ host: 'h.com' } as any);
+
+    expect(
+      integration.resolveEditUrl(
+        'https://dev.azure.com/organization/project/_git/repository',
+      ),
+    ).toBe('https://dev.azure.com/organization/project/_git/repository');
+
+    expect(
+      integration.resolveEditUrl(
+        'https://dev.azure.com/organization/project/_git/repository?path=%2F&version=GBmain&_a=contents',
+      ),
+    ).toBe(
+      'https://dev.azure.com/organization/project/_git/repository?path=%2F&version=GBmain&_a=contents',
+    );
+
+    expect(
+      integration.resolveEditUrl('https://dev.azure.com/organization/project'),
+    ).toBe('https://dev.azure.com/organization/project');
   });
 });

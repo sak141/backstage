@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,22 +14,31 @@
  * limitations under the License.
  */
 
-import { EntityName } from '@backstage/catalog-model';
-import { createApiRef } from '@backstage/core';
+import { CompoundEntityRef } from '@backstage/catalog-model';
+import { createApiRef } from '@backstage/core-plugin-api';
 import { PartialEntity } from '../types';
 
+/**
+ * Utility API reference for the {@link CatalogImportApi}.
+ *
+ * @public
+ */
 export const catalogImportApiRef = createApiRef<CatalogImportApi>({
   id: 'plugin.catalog-import.service',
-  description: 'Used by the catalog import plugin to make requests',
 });
 
-// result of the analyze state
+/**
+ * Result of the analysis.
+ *
+ * @public
+ */
 export type AnalyzeResult =
   | {
       type: 'locations';
       locations: Array<{
         target: string;
-        entities: EntityName[];
+        exists?: boolean;
+        entities: CompoundEntityRef[];
       }>;
     }
   | {
@@ -39,8 +48,18 @@ export type AnalyzeResult =
       generatedEntities: PartialEntity[];
     };
 
+/**
+ * API for driving catalog imports.
+ *
+ * @public
+ */
 export interface CatalogImportApi {
   analyzeUrl(url: string): Promise<AnalyzeResult>;
+
+  preparePullRequest?(): Promise<{
+    title: string;
+    body: string;
+  }>;
 
   submitPullRequest(options: {
     repositoryUrl: string;

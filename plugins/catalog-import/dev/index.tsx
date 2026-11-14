@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,15 @@
  */
 
 import { CatalogApi } from '@backstage/catalog-client';
-import { Entity, EntityName } from '@backstage/catalog-model';
-import { Content, Header, InfoCard, Page } from '@backstage/core';
+import { Entity, CompoundEntityRef } from '@backstage/catalog-model';
 import { createDevApp } from '@backstage/dev-utils';
 import { catalogApiRef } from '@backstage/plugin-catalog-react';
-import { Grid, ListItem, ListItemIcon, ListItemText } from '@material-ui/core';
+import Grid from '@material-ui/core/Grid';
+import ListItem from '@material-ui/core/ListItem';
+import ListItemIcon from '@material-ui/core/ListItemIcon';
+import ListItemText from '@material-ui/core/ListItemText';
 import AlarmIcon from '@material-ui/icons/Alarm';
 import LocationOnIcon from '@material-ui/icons/LocationOn';
-import React from 'react';
 import {
   AnalyzeResult,
   CatalogImportApi,
@@ -30,9 +31,10 @@ import {
   EntityListComponent,
   ImportStepper,
 } from '../src';
-import { ImportComponentPage } from '../src/components/ImportComponentPage';
+import { ImportPage } from '../src/components/ImportPage';
+import { Content, Header, InfoCard, Page } from '@backstage/core-components';
 
-const getEntityNames = (url: string): EntityName[] => [
+const getEntityNames = (url: string): CompoundEntityRef[] => [
   {
     kind: 'Component',
     namespace: url.replace(/^.*(folder-[^/]+).*|.*()$/, '$1') || 'default',
@@ -252,7 +254,7 @@ createDevApp()
   })
   .addPage({
     title: 'Catalog Import',
-    element: <ImportComponentPage />,
+    element: <ImportPage />,
   })
   .addPage({
     title: 'Catalog Import 2',

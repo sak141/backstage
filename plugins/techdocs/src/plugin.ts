@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,54 +13,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/*
- * Copyright 2020 Spotify AB
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 
 import {
-  createPlugin,
-  createRouteRef,
-  createApiFactory,
-  configApiRef,
-  discoveryApiRef,
-  identityApiRef,
-  createRoutableExtension,
-  createComponentExtension,
-} from '@backstage/core';
-import {
-  techdocsStorageApiRef,
-  TechDocsStorageApi,
   techdocsApiRef,
-  TechDocsApi,
-} from './api';
+  techdocsStorageApiRef,
+} from '@backstage/plugin-techdocs-react';
+import { TechDocsClient, TechDocsStorageClient } from './client';
+import {
+  rootDocsRouteRef,
+  rootRouteRef,
+  rootCatalogDocsRouteRef,
+} from './routes';
+import {
+  configApiRef,
+  createApiFactory,
+  createPlugin,
+  createRoutableExtension,
+  discoveryApiRef,
+  fetchApiRef,
+} from '@backstage/core-plugin-api';
+import {
+  createSearchResultListItemExtension,
+  SearchResultListItemExtensionProps,
+} from '@backstage/plugin-search-react';
+import { TechDocsSearchResultListItemProps } from './search/components/TechDocsSearchResultListItem';
 
-export const rootRouteRef = createRouteRef({
-  path: '',
-  title: 'TechDocs Landing Page',
-});
-
-export const rootDocsRouteRef = createRouteRef({
-  path: ':namespace/:kind/:name/*',
-  title: 'Docs',
-});
-
-export const rootCatalogDocsRouteRef = createRouteRef({
-  path: '*',
-  title: 'Docs',
-});
-
+/**
+ * The Backstage plugin that renders technical documentation for your components
+ *
+ * @public
+ */
 export const techdocsPlugin = createPlugin({
   id: 'techdocs',
   apis: [
@@ -69,13 +51,13 @@ export const techdocsPlugin = createPlugin({
       deps: {
         configApi: configApiRef,
         discoveryApi: discoveryApiRef,
-        identityApi: identityApiRef,
+        fetchApi: fetchApiRef,
       },
-      factory: ({ configApi, discoveryApi, identityApi }) =>
-        new TechDocsStorageApi({
+      factory: ({ configApi, discoveryApi, fetchApi }) =>
+        new TechDocsStorageClient({
           configApi,
           discoveryApi,
-          identityApi,
+          fetchApi,
         }),
     }),
     createApiFactory({
@@ -83,58 +65,57 @@ export const techdocsPlugin = createPlugin({
       deps: {
         configApi: configApiRef,
         discoveryApi: discoveryApiRef,
-        identityApi: identityApiRef,
+        fetchApi: fetchApiRef,
       },
-      factory: ({ configApi, discoveryApi, identityApi }) =>
-        new TechDocsApi({
+      factory: ({ configApi, discoveryApi, fetchApi }) =>
+        new TechDocsClient({
           configApi,
           discoveryApi,
-          identityApi,
+          fetchApi,
         }),
     }),
   ],
   routes: {
     root: rootRouteRef,
+    docRoot: rootDocsRouteRef,
     entityContent: rootCatalogDocsRouteRef,
   },
 });
 
+/**
+ * Routable extension used to render docs
+ *
+ * @public
+ */
 export const TechdocsPage = techdocsPlugin.provide(
   createRoutableExtension({
+    name: 'TechdocsPage',
     component: () => import('./Router').then(m => m.Router),
     mountPoint: rootRouteRef,
   }),
 );
 
+/**
+ * Routable extension used to render docs on Entity page
+ *
+ * @public
+ */
 export const EntityTechdocsContent = techdocsPlugin.provide(
   createRoutableExtension({
-    component: () => import('./Router').then(m => m.EmbeddedDocsRouter),
+    name: 'EntityTechdocsContent',
+    component: () => import('./Router').then(m => m.LegacyEmbeddedDocsRouter),
     mountPoint: rootCatalogDocsRouteRef,
   }),
 );
 
-// takes a list of entities and renders documentation cards
-export const DocsCardGrid = techdocsPlugin.provide(
-  createComponentExtension({
-    component: {
-      lazy: () =>
-        import('./home/components/DocsCardGrid').then(m => m.DocsCardGrid),
-    },
-  }),
-);
-
-// takes a list of entities and renders table listing documentation
-export const DocsTable = techdocsPlugin.provide(
-  createComponentExtension({
-    component: {
-      lazy: () => import('./home/components/DocsTable').then(m => m.DocsTable),
-    },
-  }),
-);
-
-// takes a custom tabs config object and renders a documentation landing page
+/**
+ * Component which takes a custom tabs config object and renders a documentation landing page.
+ *
+ * @public
+ */
 export const TechDocsCustomHome = techdocsPlugin.provide(
   createRoutableExtension({
+    name: 'TechDocsCustomHome',
     component: () =>
       import('./home/components/TechDocsCustomHome').then(
         m => m.TechDocsCustomHome,
@@ -143,10 +124,52 @@ export const TechDocsCustomHome = techdocsPlugin.provide(
   }),
 );
 
+/**
+ * Responsible for rendering the provided router element
+ *
+ * @public
+ */
+export const TechDocsIndexPage = techdocsPlugin.provide(
+  createRoutableExtension({
+    name: 'TechDocsIndexPage',
+    component: () =>
+      import('./home/components/TechDocsIndexPage').then(
+        m => m.TechDocsIndexPage,
+      ),
+    mountPoint: rootRouteRef,
+  }),
+);
+
+/**
+ * Component responsible for composing a TechDocs reader page experience
+ *
+ * @public
+ */
 export const TechDocsReaderPage = techdocsPlugin.provide(
   createRoutableExtension({
+    name: 'TechDocsReaderPage',
     component: () =>
-      import('./reader/components/TechDocsPage').then(m => m.TechDocsPage),
+      import('./reader/components/TechDocsReaderPage').then(
+        m => m.TechDocsReaderPage,
+      ),
     mountPoint: rootDocsRouteRef,
+  }),
+);
+
+/**
+ * React extension used to render results on Search page or modal
+ *
+ * @public
+ */
+export const TechDocsSearchResultListItem: (
+  props: SearchResultListItemExtensionProps<TechDocsSearchResultListItemProps>,
+) => JSX.Element | null = techdocsPlugin.provide(
+  createSearchResultListItemExtension({
+    name: 'TechDocsSearchResultListItem',
+    component: () =>
+      import('./search/components/TechDocsSearchResultListItem').then(
+        m => m.TechDocsSearchResultListItem,
+      ),
+    predicate: result => result.type === 'techdocs',
   }),
 );

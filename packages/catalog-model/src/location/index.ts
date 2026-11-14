@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,18 +15,12 @@
  */
 
 export {
-  LOCATION_ANNOTATION,
-  ORIGIN_LOCATION_ANNOTATION,
-  SOURCE_LOCATION_ANNOTATION,
+  ANNOTATION_LOCATION,
+  ANNOTATION_ORIGIN_LOCATION,
+  ANNOTATION_SOURCE_LOCATION,
 } from './annotation';
 export {
-  parseLocationReference,
-  stringifyLocationReference,
   getEntitySourceLocation,
+  parseLocationRef,
+  stringifyLocationRef,
 } from './helpers';
-export type { Location, LocationSpec } from './types';
-export {
-  analyzeLocationSchema,
-  locationSchema,
-  locationSpecSchema,
-} from './validation';

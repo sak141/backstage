@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-export { deserializeError, serializeError } from './error';
+export { deserializeError, serializeError, stringifyError } from './error';
 export type { SerializedError } from './error';
-export { parseErrorResponse } from './response';
-export type { ErrorResponse } from './response';
+export { parseErrorResponseBody } from './response';
+export type { ErrorResponseBody } from './response';

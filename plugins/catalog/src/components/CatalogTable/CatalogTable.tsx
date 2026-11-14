@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,145 +14,128 @@
  * limitations under the License.
  */
 import {
+  ANNOTATION_EDIT_URL,
+  ANNOTATION_VIEW_URL,
   Entity,
-  EntityName,
   RELATION_OWNED_BY,
   RELATION_PART_OF,
+  stringifyEntityRef,
 } from '@backstage/catalog-model';
 import {
   CodeSnippet,
-  OverflowTooltip,
   Table,
   TableColumn,
   TableProps,
   WarningPanel,
-} from '@backstage/core';
+} from '@backstage/core-components';
 import {
-  EntityRefLink,
-  EntityRefLinks,
-  formatEntityRefTitle,
+  entityPresentationApiRef,
+  entityPresentationSnapshot,
   getEntityRelations,
+  useEntityList,
   useStarredEntities,
+  type EntityPresentationApi,
 } from '@backstage/plugin-catalog-react';
-import { Chip } from '@material-ui/core';
+import CircularProgress from '@material-ui/core/CircularProgress';
+import Typography from '@material-ui/core/Typography';
+import { visuallyHidden } from '@mui/utils';
 import Edit from '@material-ui/icons/Edit';
 import OpenInNew from '@material-ui/icons/OpenInNew';
-import React from 'react';
-import {
-  getEntityMetadataEditUrl,
-  getEntityMetadataViewUrl,
-} from '../../utils';
-import {
-  favouriteEntityIcon,
-  favouriteEntityTooltip,
-} from '../FavouriteEntity/FavouriteEntity';
+import { capitalize, sortBy } from 'lodash';
+import pluralize from 'pluralize';
+import { ReactNode, useMemo, useRef } from 'react';
+import { columnFactories } from './columns';
+import { CatalogTableColumnsFunc, CatalogTableRow } from './types';
+import { OffsetPaginatedCatalogTable } from './OffsetPaginatedCatalogTable';
+import { CursorPaginatedCatalogTable } from './CursorPaginatedCatalogTable';
+import { defaultCatalogTableColumnsFunc } from './defaultCatalogTableColumnsFunc';
+import { useApiHolder } from '@backstage/core-plugin-api';
+import { useTranslationRef } from '@backstage/core-plugin-api/alpha';
+import { catalogTranslationRef } from '../../alpha/translation';
+import { FavoriteToggleIcon } from '@backstage/core-components';
 
-type EntityRow = {
-  entity: Entity;
-  resolved: {
-    name: string;
-    partOfSystemRelationTitle?: string;
-    partOfSystemRelations: EntityName[];
-    ownedByRelationsTitle?: string;
-    ownedByRelations: EntityName[];
-  };
+/**
+ * Props for {@link CatalogTable}.
+ *
+ * @public
+ */
+export interface CatalogTableProps {
+  columns?: TableColumn<CatalogTableRow>[] | CatalogTableColumnsFunc;
+  actions?: TableProps<CatalogTableRow>['actions'];
+  tableOptions?: TableProps<CatalogTableRow>['options'];
+  emptyContent?: ReactNode;
+  /**
+   * A static title to use for the table. If not provided, a title will be
+   * generated based on the current Kind and Type filters and total number of items.
+   */
+  title?: string;
+  subtitle?: string;
+}
+
+const sortEntities = (entities: Entity[], api?: EntityPresentationApi) => {
+  return sortBy(
+    entities,
+    e =>
+      entityPresentationSnapshot(e, { defaultKind: 'Component' }, api)
+        .primaryTitle,
+  );
 };
 
-const columns: TableColumn<EntityRow>[] = [
-  {
-    title: 'Name',
-    field: 'resolved.name',
-    highlight: true,
-    render: ({ entity }) => (
-      <EntityRefLink entityRef={entity} defaultKind="Component" />
-    ),
-  },
-  {
-    title: 'System',
-    field: 'resolved.partOfSystemRelationTitle',
-    render: ({ resolved }) => (
-      <EntityRefLinks
-        entityRefs={resolved.partOfSystemRelations}
-        defaultKind="system"
-      />
-    ),
-  },
-  {
-    title: 'Owner',
-    field: 'resolved.ownedByRelationsTitle',
-    render: ({ resolved }) => (
-      <EntityRefLinks
-        entityRefs={resolved.ownedByRelations}
-        defaultKind="group"
-      />
-    ),
-  },
-  {
-    title: 'Type',
-    field: 'entity.spec.type',
-    hidden: true,
-  },
-  {
-    title: 'Lifecycle',
-    field: 'entity.spec.lifecycle',
-  },
-  {
-    title: 'Description',
-    field: 'entity.metadata.description',
-    render: ({ entity }) => (
-      <OverflowTooltip
-        text={entity.metadata.description}
-        placement="bottom-start"
-      />
-    ),
-    width: 'auto',
-  },
-  {
-    title: 'Tags',
-    field: 'entity.metadata.tags',
-    cellStyle: {
-      padding: '0px 16px 0px 20px',
-    },
-    render: ({ entity }) => (
-      <>
-        {entity.metadata.tags &&
-          entity.metadata.tags.map(t => (
-            <Chip
-              key={t}
-              label={t}
-              size="small"
-              variant="outlined"
-              style={{ marginBottom: '0px' }}
-            />
-          ))}
-      </>
-    ),
-  },
-];
-
-type CatalogTableProps = {
-  entities: Entity[];
-  titlePreamble: string;
-  loading: boolean;
-  error?: any;
-  view?: string;
-};
-
-export const CatalogTable = ({
-  entities,
-  loading,
-  error,
-  titlePreamble,
-  view,
-}: CatalogTableProps) => {
+/**
+ * CatalogTable is a wrapper around the Table component that is pre-configured
+ * to display catalog entities.
+ *
+ * @remarks
+ *
+ * See {@link https://backstage.io/docs/features/software-catalog/catalog-customization}
+ *
+ * @public
+ */
+export const CatalogTable = (props: CatalogTableProps) => {
+  const {
+    columns = defaultCatalogTableColumnsFunc,
+    tableOptions,
+    subtitle,
+    emptyContent,
+  } = props;
   const { isStarredEntity, toggleStarredEntity } = useStarredEntities();
+  const apis = useApiHolder();
+  const entityPresentationApi = apis.get(entityPresentationApiRef);
+  const entityListContext = useEntityList();
+
+  const {
+    loading,
+    error,
+    entities,
+    filters,
+    pageInfo,
+    totalItems,
+    totalItemsLoading,
+    paginationMode,
+  } = entityListContext;
+
+  // Track whether we've ever received data. The full-table spinner should
+  // only show on the truly initial load — not when a filter change
+  // empties the client-side entity list before the backend responds.
+  const hasHadData = useRef(false);
+  if (entities.length > 0) {
+    hasHadData.current = true;
+  }
+  const isLoading = loading && !hasHadData.current;
+
+  const tableColumns = useMemo(
+    () =>
+      typeof columns === 'function' ? columns(entityListContext) : columns,
+    [columns, entityListContext],
+  );
+  const { t } = useTranslationRef(catalogTranslationRef);
 
   if (error) {
     return (
       <div>
         <WarningPanel
           severity="error"
-          title="Could not fetch catalog entities."
+          title={t('catalogTable.warningPanelTitle')}
         >
           <CodeSnippet language="text" text={error.toString()} />
         </WarningPanel>
@@ -160,12 +143,19 @@ export const CatalogTable = ({
     );
   }
 
-  const actions: TableProps<EntityRow>['actions'] = [
+  const defaultActions: TableProps<CatalogTableRow>['actions'] = [
     ({ entity }) => {
-      const url = getEntityMetadataViewUrl(entity);
+      const url = entity.metadata.annotations?.[ANNOTATION_VIEW_URL];
+      const title = t('catalogTable.viewActionTitle');
+
       return {
-        icon: () => <OpenInNew fontSize="small" />,
-        tooltip: 'View',
+        icon: () => (
+          <>
+            <Typography style={visuallyHidden}>{title}</Typography>
+            <OpenInNew fontSize="small" />
+          </>
+        ),
+        tooltip: title,
         disabled: !url,
         onClick: () => {
           if (!url) return;
@@ -174,10 +164,17 @@ export const CatalogTable = ({
       };
     },
     ({ entity }) => {
-      const url = getEntityMetadataEditUrl(entity);
+      const url = entity.metadata.annotations?.[ANNOTATION_EDIT_URL];
+      const title = t('catalogTable.editActionTitle');
+
       return {
-        icon: () => <Edit fontSize="small" />,
-        tooltip: 'Edit',
+        icon: () => (
+          <>
+            <Typography style={visuallyHidden}>{title}</Typography>
+            <Edit fontSize="small" />
+          </>
+        ),
+        tooltip: title,
         disabled: !url,
         onClick: () => {
           if (!url) return;
@@ -187,64 +184,160 @@ export const CatalogTable = ({
     },
     ({ entity }) => {
       const isStarred = isStarredEntity(entity);
+      const title = isStarred
+        ? t('catalogTable.unStarActionTitle')
+        : t('catalogTable.starActionTitle');
+
       return {
         cellStyle: { paddingLeft: '1em' },
-        icon: () => favouriteEntityIcon(isStarred),
-        tooltip: favouriteEntityTooltip(isStarred),
+        icon: () => <FavoriteToggleIcon isFavorite={isStarred} />,
+        tooltip: title,
         onClick: () => toggleStarredEntity(entity),
       };
     },
   ];
 
-  const rows = entities.map(entity => {
-    const partOfSystemRelations = getEntityRelations(entity, RELATION_PART_OF, {
-      kind: 'system',
-    });
-    const ownedByRelations = getEntityRelations(entity, RELATION_OWNED_BY);
+  // Derive the title's kind label from the displayed entities so the
+  // title stays consistent with the rows during filter transitions.
+  // Use the filter's label when it matches (it has proper casing),
+  // otherwise fall back to the entity's kind field directly.
+  const displayedKind = entities[0]?.kind ?? filters.kind?.value;
+  const displayedKindLabel =
+    displayedKind?.toLowerCase() === filters.kind?.value?.toLowerCase()
+      ? filters.kind?.label || ''
+      : displayedKind || '';
+  const currentType = filters.type?.value || '';
+  // Show the count as long as we have one. Hide it only when new rows
+  // have arrived but the count hasn't caught up yet — at that point
+  // the old count would be wrong for the new data.
+  const countIsStale = !loading && totalItemsLoading;
+  const currentCount =
+    typeof totalItems === 'number' && !countIsStale ? ` (${totalItems})` : '';
+  const somethingIsLoading = loading || totalItemsLoading;
+  // TODO(timbonicus): remove the title from the CatalogTable once using EntitySearchBar
+  const titlePreamble = capitalize(
+    filters.user?.value ?? t('catalogTable.allFilters'),
+  );
+  const titleBase =
+    props.title ||
+    [titlePreamble, currentType, pluralize(displayedKindLabel)]
+      .filter(s => s)
+      .join(' ');
+  const title = props.title ? (
+    titleBase
+  ) : (
+    <span
+      style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5em' }}
+    >
+      {titleBase}
+      {currentCount}
+      {somethingIsLoading && !isLoading && (
+        <CircularProgress size="0.8em" data-testid="loading-indicator" />
+      )}
+    </span>
+  );
 
-    return {
-      entity,
-      resolved: {
-        name: formatEntityRefTitle(entity, {
-          defaultKind: 'Component',
-        }),
-        ownedByRelationsTitle: ownedByRelations
-          .map(r => formatEntityRefTitle(r, { defaultKind: 'group' }))
-          .join(', '),
-        ownedByRelations,
-        partOfSystemRelationTitle: partOfSystemRelations
-          .map(r =>
-            formatEntityRefTitle(r, {
-              defaultKind: 'system',
-            }),
-          )
-          .join(', '),
-        partOfSystemRelations,
-      },
-    };
-  });
+  const actions = props.actions || defaultActions;
+  const options: TableProps['options'] = {
+    actionsColumnIndex: -1,
+    loadingType: 'linear' as const,
+    showEmptyDataSourceMessage: !isLoading,
+    padding: 'dense' as const,
+    ...tableOptions,
+  };
 
-  const typeColumn = columns.find(c => c.title === 'Type');
-  if (typeColumn) {
-    typeColumn.hidden = view !== 'Other';
+  if (paginationMode === 'cursor') {
+    return (
+      <CursorPaginatedCatalogTable
+        columns={tableColumns}
+        emptyContent={emptyContent}
+        isLoading={isLoading}
+        title={title}
+        actions={actions}
+        subtitle={subtitle}
+        options={options}
+        data={entities.map(e => toEntityRow(e, entityPresentationApi))}
+        next={pageInfo?.next}
+        prev={pageInfo?.prev}
+      />
+    );
+  } else if (paginationMode === 'offset') {
+    return (
+      <OffsetPaginatedCatalogTable
+        columns={tableColumns}
+        emptyContent={emptyContent}
+        isLoading={isLoading}
+        title={title}
+        actions={actions}
+        subtitle={subtitle}
+        options={options}
+        data={entities.map(e => toEntityRow(e, entityPresentationApi))}
+      />
+    );
   }
 
+  const rows = sortEntities(entities, entityPresentationApi).map(e =>
+    toEntityRow(e, entityPresentationApi),
+  );
+  const pageSize = 20;
+  const showPagination = rows.length > pageSize;
+
   return (
-    <Table<EntityRow>
-      isLoading={loading}
-      columns={columns}
+    <Table<CatalogTableRow>
+      isLoading={isLoading}
+      columns={tableColumns}
       options={{
-        paging: true,
-        pageSize: 20,
-        actionsColumnIndex: -1,
-        loadingType: 'linear',
-        showEmptyDataSourceMessage: !loading,
-        padding: 'dense',
+        paging: showPagination,
+        pageSize: pageSize,
         pageSizeOptions: [20, 50, 100],
+        ...options,
       }}
-      title={`${titlePreamble} (${(entities && entities.length) || 0})`}
+      title={title}
       data={rows}
       actions={actions}
+      subtitle={subtitle}
+      emptyContent={emptyContent}
     />
   );
 };
+
+CatalogTable.columns = columnFactories;
+CatalogTable.defaultColumnsFunc = defaultCatalogTableColumnsFunc;
+
+function toEntityRow(entity: Entity, api?: EntityPresentationApi) {
+  const partOfSystemRelations = getEntityRelations(entity, RELATION_PART_OF, {
+    kind: 'system',
+  });
+  const ownedByRelations = getEntityRelations(entity, RELATION_OWNED_BY);
+
+  return {
+    entity,
+    resolved: {
+      // This name is here for backwards compatibility mostly; the
+      // presentation of refs in the table should in general be handled with
+      // EntityRefLink / EntityName components
+      name: entityPresentationSnapshot(
+        entity,
+        { defaultKind: 'Component' },
+        api,
+      ).primaryTitle,
+      entityRef: stringifyEntityRef(entity),
+      ownedByRelationsTitle: ownedByRelations
+        .map(
+          r =>
+            entityPresentationSnapshot(r, { defaultKind: 'group' }, api)
+              .primaryTitle,
+        )
+        .join(', '),
+      ownedByRelations,
+      partOfSystemRelationTitle: partOfSystemRelations
+        .map(
+          r =>
+            entityPresentationSnapshot(r, { defaultKind: 'system' }, api)
+              .primaryTitle,
+        )
+        .join(', '),
+      partOfSystemRelations,
+    },
+  };
+}

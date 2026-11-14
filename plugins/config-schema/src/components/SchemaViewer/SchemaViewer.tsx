@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import { Box, Paper } from '@material-ui/core';
+import Box from '@material-ui/core/Box';
+import Paper from '@material-ui/core/Paper';
 import { Schema } from 'jsonschema';
-import React from 'react';
 import { SchemaView } from '../SchemaView';
 import { SchemaBrowser } from '../SchemaBrowser';
 import { ScrollTargetsProvider } from '../ScrollTargetsContext/ScrollTargetsContext';

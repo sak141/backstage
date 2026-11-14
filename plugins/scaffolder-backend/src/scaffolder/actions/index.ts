@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 export * from './builtin';
-export { TemplateActionRegistry } from './TemplateActionRegistry';
-export { createTemplateAction } from './createTemplateAction';
-export type { ActionContext, TemplateAction } from './types';
+
+export {
+  type TemplateActionRegistry,
+  DefaultTemplateActionRegistry,
+} from './TemplateActionRegistry';

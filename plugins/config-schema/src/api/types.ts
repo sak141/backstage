@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,21 @@
  * limitations under the License.
  */
 
-import { createApiRef, Observable } from '@backstage/core';
 import { Schema } from 'jsonschema';
+import { createApiRef } from '@backstage/core-plugin-api';
+import { Observable } from '@backstage/types';
 
+/** @public */
 export interface ConfigSchemaResult {
   schema?: Schema;
 }
 
+/** @public */
 export interface ConfigSchemaApi {
   schema$(): Observable<ConfigSchemaResult>;
 }
 
+/** @public */
 export const configSchemaApiRef = createApiRef<ConfigSchemaApi>({
   id: 'plugin.config-schema',
 });

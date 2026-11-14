@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,14 @@
  * limitations under the License.
  */
 
+/**
+ * A Backstage plugin that helps represent API entities in the frontend
+ *
+ * @packageDocumentation
+ */
+
 export * from './components';
+export type { ApiDocsConfig } from './config';
 export { apiDocsConfigRef } from './config';
 export {
   apiDocsPlugin,
@@ -27,3 +34,4 @@ export {
   EntityProvidedApisCard,
   EntityProvidingComponentsCard,
 } from './plugin';
+export { apiDocsTranslationRef } from './translation';

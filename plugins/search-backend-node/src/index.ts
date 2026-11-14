@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,6 +14,31 @@
  * limitations under the License.
  */
 
+/**
+ * A library for Backstage backend plugins that want to interact with the search backend plugin
+ *
+ * @packageDocumentation
+ */
+
 export { IndexBuilder } from './IndexBuilder';
+export { Scheduler } from './Scheduler';
+export * from './collators';
 export { LunrSearchEngine } from './engines';
-export type { SearchEngine } from './types';
+export type {
+  ConcreteLunrQuery,
+  LunrQueryTranslator,
+  LunrSearchEngineIndexer,
+} from './engines';
+export type {
+  IndexBuilderOptions,
+  RegisterCollatorParameters,
+  RegisterDecoratorParameters,
+  SearchEngine,
+  QueryRequestOptions,
+  QueryTranslator,
+} from './types';
+export * from './errors';
+export * from './indexing';
+export * from './test-utils';
+
+export type { ScheduleTaskParameters } from './Scheduler';

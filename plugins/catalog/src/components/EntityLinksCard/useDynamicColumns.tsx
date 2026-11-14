@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-import { Theme, useMediaQuery } from '@material-ui/core';
+import useMediaQuery from '@material-ui/core/useMediaQuery';
+import { Theme } from '@material-ui/core/styles';
 import { Breakpoint, ColumnBreakpoints } from './types';
 
 const colDefaults: ColumnBreakpoints = {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,28 +14,78 @@
  * limitations under the License.
  */
 
+import { createCatalogModelLayer } from '../model/createCatalogModelLayer';
 import type { Entity } from '../entity/Entity';
-import schema from '../schema/kinds/System.v1alpha1.schema.json';
-import entitySchema from '../schema/Entity.schema.json';
-import entityMetaSchema from '../schema/EntityMeta.schema.json';
-import commonSchema from '../schema/shared/common.schema.json';
+import jsonSchema from '../schema/kinds/System.v1alpha1.schema.json';
 import { ajvCompiledJsonSchemaValidator } from './util';
 
-const API_VERSION = ['backstage.io/v1alpha1', 'backstage.io/v1beta1'] as const;
-const KIND = 'System' as const;
-
+/**
+ * Backstage catalog System kind Entity. Systems group Components, Resources and APIs together.
+ *
+ * @remarks
+ *
+ * See {@link https://backstage.io/docs/features/software-catalog/system-model}
+ *
+ * @public
+ */
 export interface SystemEntityV1alpha1 extends Entity {
-  apiVersion: typeof API_VERSION[number];
-  kind: typeof KIND;
+  apiVersion: 'backstage.io/v1alpha1' | 'backstage.io/v1beta1';
+  kind: 'System';
   spec: {
     owner: string;
     domain?: string;
+    type?: string;
   };
 }
 
-export const systemEntityV1alpha1Validator = ajvCompiledJsonSchemaValidator(
-  KIND,
-  API_VERSION,
-  schema,
-  [commonSchema, entityMetaSchema, entitySchema],
-);
+/**
+ * {@link KindValidator} for {@link SystemEntityV1alpha1}.
+ *
+ * @public
+ */
+export const systemEntityV1alpha1Validator =
+  ajvCompiledJsonSchemaValidator(jsonSchema);
+
+/**
+ * Extends the catalog model with the System kind.
+ *
+ * @alpha
+ */
+export const systemEntityModel = createCatalogModelLayer({
+  layerId: 'catalog.backstage.io/kind-system',
+  builder: model => {
+    model.addKind({
+      group: 'backstage.io',
+      names: {
+        kind: 'System',
+        singular: 'system',
+        plural: 'systems',
+      },
+      description:
+        'A System is a collection of resources and components that exposes one or several APIs.',
+      versions: [
+        {
+          name: ['v1alpha1', 'v1beta1'],
+          relationFields: [
+            {
+              selector: { path: 'spec.owner' },
+              relation: 'ownedBy',
+              defaultKind: 'Group',
+              defaultNamespace: 'inherit',
+              allowedKinds: ['Group', 'User'],
+            },
+            {
+              selector: { path: 'spec.domain' },
+              relation: 'partOf',
+              defaultKind: 'Domain',
+              defaultNamespace: 'inherit',
+            },
+          ],
+          schema: {
+            jsonSchema,
+          },
+        },
+      ],
+    });
+  },
+});

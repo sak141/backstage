@@ -2,7 +2,7 @@
 id: overview
 title: Kubernetes
 sidebar_label: Overview
-description: Monitoring Kubernetes based services with the service catalog
+description: Monitoring Kubernetes based services with the software catalog
 ---
 
 Kubernetes in Backstage is a tool that's designed around the needs of service
@@ -22,7 +22,9 @@ and
 
 The frontend plugin exposes information to the end user in a digestible way,
 while the backend wraps the mechanics to connect to Kubernetes clusters to
-collect the relevant information.
+collect the relevant information. The backend also supports
+[watching resources](watch.md) for real-time change notifications using async
+iterators.
 
 ## Let's use it!
 

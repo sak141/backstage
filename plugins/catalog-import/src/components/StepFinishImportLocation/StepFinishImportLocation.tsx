@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,52 +14,121 @@
  * limitations under the License.
  */
 
-import { Link } from '@backstage/core';
-import { Grid, Typography } from '@material-ui/core';
+import { CompoundEntityRef, DEFAULT_NAMESPACE } from '@backstage/catalog-model';
+import { Link } from '@backstage/core-components';
+import { useRouteRef } from '@backstage/core-plugin-api';
+import { useTranslationRef } from '@backstage/frontend-plugin-api';
+import { entityRouteRef } from '@backstage/plugin-catalog-react';
+import Grid from '@material-ui/core/Grid';
+import Typography from '@material-ui/core/Typography';
 import LocationOnIcon from '@material-ui/icons/LocationOn';
-import React from 'react';
-import { BackButton } from '../Buttons';
+import partition from 'lodash/partition';
+
+import { catalogImportTranslationRef } from '../../translation';
+import { BackButton, ViewComponentButton } from '../Buttons';
 import { EntityListComponent } from '../EntityListComponent';
-import { ReviewResult } from '../useImportState';
+import { PrepareResult } from '../useImportState';
 
 type Props = {
-  reviewResult: ReviewResult;
+  prepareResult: PrepareResult;
   onReset: () => void;
 };
 
-export const StepFinishImportLocation = ({ reviewResult, onReset }: Props) => (
-  <>
-    {reviewResult.type === 'repository' && (
+// Among the newly registered entities, return a software entity (e.g. Component, API, Resource)
+const filterComponentEntity = (
+  newLocations: Array<{
+    exists?: boolean;
+    target: string;
+    entities: CompoundEntityRef[];
+  }>,
+): CompoundEntityRef | null => {
+  for (const location of newLocations) {
+    for (const entity of location.entities) {
+      if (
+        ['component', 'api', 'resource'].includes(entity.kind.toLowerCase())
+      ) {
+        return {
+          kind: entity.kind.toLowerCase(),
+          namespace: entity.namespace?.toLowerCase() ?? DEFAULT_NAMESPACE,
+          name: entity.name,
+        };
+      }
+    }
+  }
+
+  return null;
+};
+
+export const StepFinishImportLocation = ({ prepareResult, onReset }: Props) => {
+  const { t } = useTranslationRef(catalogImportTranslationRef);
+  const entityRoute = useRouteRef(entityRouteRef);
+
+  if (prepareResult.type === 'repository') {
+    return (
       <>
         <Typography paragraph>
-          The following Pull Request has been opened:{' '}
+          {t('stepFinishImportLocation.repository.title')}
           <Link
-            to={reviewResult.pullRequest.url}
+            to={prepareResult.pullRequest.url}
             target="_blank"
             rel="noreferrer"
           >
-            {reviewResult.pullRequest.url}
+            {prepareResult.pullRequest.url}
           </Link>
         </Typography>
-
         <Typography paragraph>
-          Your entities will be imported as soon as the Pull Request is merged.
+          {t('stepFinishImportLocation.repository.description')}
         </Typography>
+        <Grid container spacing={0}>
+          <BackButton onClick={onReset}>
+            {t('stepFinishImportLocation.backButtonText')}
+          </BackButton>
+        </Grid>
       </>
-    )}
+    );
+  }
 
-    <Typography>
-      The following entities have been added to the catalog:
-    </Typography>
+  const [existingLocations, newLocations] = partition(
+    prepareResult.locations,
+    l => l.exists,
+  );
+  const newComponentEntity = filterComponentEntity(newLocations);
+  return (
+    <>
+      {newLocations.length > 0 && (
+        <>
+          <Typography>{t('stepFinishImportLocation.locations.new')}</Typography>
 
-    <EntityListComponent
-      locations={reviewResult.locations}
-      locationListItemIcon={() => <LocationOnIcon />}
-      withLinks
-    />
+          <EntityListComponent
+            locations={newLocations}
+            locationListItemIcon={() => <LocationOnIcon />}
+            withLinks
+          />
+        </>
+      )}
+      {existingLocations.length > 0 && (
+        <>
+          <Typography>
+            {t('stepFinishImportLocation.locations.existing')}
+          </Typography>
 
-    <Grid container spacing={0}>
-      <BackButton onClick={onReset}>Register another</BackButton>
-    </Grid>
-  </>
-);
+          <EntityListComponent
+            locations={existingLocations}
+            locationListItemIcon={() => <LocationOnIcon />}
+            withLinks
+          />
+        </>
+      )}
+      <Grid container spacing={0}>
+        {newComponentEntity && (
+          <ViewComponentButton to={entityRoute(newComponentEntity)}>
+            {t('stepFinishImportLocation.locations.viewButtonText')}
+          </ViewComponentButton>
+        )}
+        <BackButton onClick={onReset}>
+          {t('stepFinishImportLocation.backButtonText')}
+        </BackButton>
+      </Grid>
+    </>
+  );
+};

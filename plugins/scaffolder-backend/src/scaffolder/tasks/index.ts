@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,5 +15,20 @@
  */
 
 export { DatabaseTaskStore } from './DatabaseTaskStore';
-export { StorageTaskBroker } from './StorageTaskBroker';
+export type { DatabaseTaskStoreOptions } from './DatabaseTaskStore';
+export { TaskManager } from './StorageTaskBroker';
+export type { CurrentClaimedTask } from './StorageTaskBroker';
 export { TaskWorker } from './TaskWorker';
+export type { CreateWorkerOptions } from './TaskWorker';
+export type {
+  TaskStoreEmitOptions,
+  TaskStoreListEventsOptions,
+  TaskStoreShutDownTaskOptions,
+  TaskStore,
+  TaskStoreCreateTaskOptions,
+  TaskStoreRecoverTaskOptions,
+  TaskStoreCreateTaskResult,
+  StepState,
+  TaskState,
+  UpdateStepStateOptions,
+} from './types';

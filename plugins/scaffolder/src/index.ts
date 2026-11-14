@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,28 @@
  * limitations under the License.
  */
 
+/**
+ * The Backstage plugin that helps you create new things
+ *
+ * @packageDocumentation
+ */
+export { ScaffolderClient } from './api';
+
 export {
-  scaffolderPlugin,
-  scaffolderPlugin as plugin,
+  EntityPickerFieldExtension,
+  EntityNamePickerFieldExtension,
+  EntityTagsPickerFieldExtension,
+  OwnerPickerFieldExtension,
+  OwnedEntityPickerFieldExtension,
+  MyGroupsPickerFieldExtension,
+  RepoUrlPickerFieldExtension,
+  MultiEntityPickerFieldExtension,
+  RepoBranchPickerFieldExtension,
+  RepoOwnerPickerFieldExtension,
   ScaffolderPage,
+  scaffolderPlugin,
 } from './plugin';
-export type { ScaffolderApi } from './api';
-export { ScaffolderClient, scaffolderApiRef } from './api';
+
+export * from './components';
+export * from './deprecated';
+export { scaffolderTranslationRef } from './translation';

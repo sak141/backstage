@@ -9,16 +9,17 @@ You can use the flag `--skip-install` to skip the install.
 With `npx`:
 
 ```sh
-$ npx @backstage/create-app
+npx @backstage/create-app
 ```
 
 With a local clone of this repo, from the main `create-app/` folder, run:
 
 ```sh
-$ yarn backstage-create-app
+yarn install
+yarn backstage-create-app
 ```
 
 ## Documentation
 
 - [Backstage Readme](https://github.com/backstage/backstage/blob/master/README.md)
-- [Backstage Documentation](https://github.com/backstage/backstage/blob/master/docs/README.md)
+- [Backstage Documentation](https://backstage.io/docs/)

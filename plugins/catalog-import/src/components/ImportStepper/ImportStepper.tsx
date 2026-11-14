@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,22 +14,24 @@
  * limitations under the License.
  */
 
-import {
-  configApiRef,
-  InfoCard,
-  InfoCardVariants,
-  useApi,
-} from '@backstage/core';
-import { Step, StepContent, Stepper } from '@material-ui/core';
+import { InfoCard, InfoCardVariants } from '@backstage/core-components';
+import { useApi } from '@backstage/core-plugin-api';
+import { TranslationFunction } from '@backstage/core-plugin-api/alpha';
+import { useTranslationRef } from '@backstage/frontend-plugin-api';
+import { catalogImportTranslationRef } from '@backstage/plugin-catalog-import/alpha';
+import Step from '@material-ui/core/Step';
+import StepContent from '@material-ui/core/StepContent';
+import Stepper from '@material-ui/core/Stepper';
 import { makeStyles } from '@material-ui/core/styles';
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
+
+import { catalogImportApiRef } from '../../api';
 import { ImportFlows, ImportState, useImportState } from '../useImportState';
 import {
   defaultGenerateStepper,
   defaultStepper,
   StepConfiguration,
   StepperProvider,
-  StepperProviderOpts,
 } from './defaults';
 
 const useStyles = makeStyles(() => ({
@@ -38,29 +40,41 @@ const useStyles = makeStyles(() => ({
   },
 }));
 
-type Props = {
+/**
+ * Props for {@link ImportStepper}.
+ *
+ * @public
+ */
+export interface ImportStepperProps {
   initialUrl?: string;
   generateStepper?: (
     flow: ImportFlows,
     defaults: StepperProvider,
+    t: TranslationFunction<typeof catalogImportTranslationRef.T>,
   ) => StepperProvider;
   variant?: InfoCardVariants;
-  opts?: StepperProviderOpts;
-};
+}
 
-export const ImportStepper = ({
-  initialUrl,
-  generateStepper = defaultGenerateStepper,
-  variant,
-  opts,
-}: Props) => {
-  const configApi = useApi(configApiRef);
+/**
+ * The stepper that holds the different import stages.
+ *
+ * @public
+ */
+export const ImportStepper = (props: ImportStepperProps) => {
+  const { t } = useTranslationRef(catalogImportTranslationRef);
+  const {
+    initialUrl,
+    generateStepper = defaultGenerateStepper,
+    variant,
+  } = props;
+
+  const catalogImportApi = useApi(catalogImportApiRef);
   const classes = useStyles();
   const state = useImportState({ initialUrl });
 
   const states = useMemo<StepperProvider>(
-    () => generateStepper(state.activeFlow, defaultStepper),
-    [generateStepper, state.activeFlow],
+    () => generateStepper(state.activeFlow, defaultStepper, t),
+    [generateStepper, state.activeFlow, t],
   );
 
   const render = (step: StepConfiguration) => {
@@ -82,25 +96,25 @@ export const ImportStepper = ({
         {render(
           states.analyze(
             state as Extract<ImportState, { activeState: 'analyze' }>,
-            { apis: { configApi }, opts },
+            { apis: { catalogImportApi }, t },
           ),
         )}
         {render(
           states.prepare(
             state as Extract<ImportState, { activeState: 'prepare' }>,
-            { apis: { configApi }, opts },
+            { apis: { catalogImportApi }, t },
           ),
         )}
         {render(
           states.review(
             state as Extract<ImportState, { activeState: 'review' }>,
-            { apis: { configApi }, opts },
+            { apis: { catalogImportApi }, t },
           ),
         )}
         {render(
           states.finish(
             state as Extract<ImportState, { activeState: 'finish' }>,
-            { apis: { configApi }, opts },
+            { apis: { catalogImportApi }, t },
           ),
         )}
       </Stepper>

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-import { createStyles, fade, withStyles } from '@material-ui/core';
+import { alpha } from '@material-ui/core/styles';
+import { createStyles, withStyles } from '@material-ui/core/styles';
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
-import { TreeItem, TreeItemProps, TreeView } from '@material-ui/lab';
+import TreeItem, { TreeItemProps } from '@material-ui/lab/TreeItem';
+import TreeView from '@material-ui/lab/TreeView';
 import { Schema } from 'jsonschema';
-import React, { ReactNode, useMemo, useRef } from 'react';
+import { ReactNode, useMemo, useRef } from 'react';
 import { useScrollTargets } from '../ScrollTargetsContext';
 
 const StyledTreeItem = withStyles(theme =>
@@ -30,7 +32,7 @@ const StyledTreeItem = withStyles(theme =>
     group: {
       marginLeft: 7,
       paddingLeft: theme.spacing(1),
-      borderLeft: `1px solid ${fade(theme.palette.text.primary, 0.15)}`,
+      borderLeft: `1px solid ${alpha(theme.palette.text.primary, 0.15)}`,
     },
   }),
 )((props: TreeItemProps) => <TreeItem {...props} />);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,74 +16,92 @@
 
 import { RELATION_HAS_PART, SystemEntity } from '@backstage/catalog-model';
 import {
-  CodeSnippet,
-  InfoCard,
-  Link,
-  Progress,
-  WarningPanel,
-} from '@backstage/core';
-import { Typography } from '@material-ui/core';
+  InfoCardVariants,
+  TableColumn,
+  TableOptions,
+} from '@backstage/core-components';
 import {
-  EntityTable,
-  useEntity,
-  useRelatedEntities,
-} from '@backstage/plugin-catalog-react';
-import React from 'react';
+  EntityRelationCard,
+  EntityColumnConfig,
+  entityColumnPresets,
+} from '@backstage/plugin-catalog-react/alpha';
+import {
+  asSystemEntities,
+  systemEntityColumns,
+  systemEntityHelpLink as legacyHelpLink,
+  RelatedEntitiesCard,
+} from '../RelatedEntitiesCard';
+import { catalogTranslationRef } from '../../alpha/translation';
+import { useTranslationRef } from '@backstage/core-plugin-api/alpha';
 
-type Props = {
-  variant?: 'gridItem';
-};
+/** @public */
+export interface HasSystemsCardProps {
+  title?: string;
+  columnConfig?: EntityColumnConfig[];
+}
 
-const columns = [
-  EntityTable.columns.createEntityRefColumn({ defaultKind: 'system' }),
-  EntityTable.columns.createOwnerColumn(),
-  EntityTable.columns.createMetadataDescriptionColumn(),
-];
+/**
+ * Props for the legacy MUI-based rendering.
+ * @deprecated Use {@link HasSystemsCardProps} instead.
+ * @public
+ */
+export interface HasSystemsCardLegacyProps {
+  title?: string;
+  /** @deprecated Use `columnConfig` instead. */
+  variant?: InfoCardVariants;
+  /** @deprecated Use `columnConfig` instead. */
+  columns?: TableColumn<SystemEntity>[];
+  /** @deprecated Use `columnConfig` instead. */
+  tableOptions?: TableOptions;
+}
 
-export const HasSystemsCard = ({ variant = 'gridItem' }: Props) => {
-  const { entity } = useEntity();
-  const { entities, loading, error } = useRelatedEntities(entity, {
-    type: RELATION_HAS_PART,
-  });
+function isLegacyProps(
+  props: HasSystemsCardProps | HasSystemsCardLegacyProps,
+): props is HasSystemsCardLegacyProps {
+  return 'variant' in props || 'columns' in props || 'tableOptions' in props;
+}
 
-  if (loading) {
+export function HasSystemsCard(
+  props: HasSystemsCardProps | HasSystemsCardLegacyProps,
+) {
+  const { t } = useTranslationRef(catalogTranslationRef);
+
+  if (isLegacyProps(props)) {
+    const {
+      variant = 'gridItem',
+      title = t('hasSystemsCard.title'),
+      columns = systemEntityColumns,
+      tableOptions = {},
+    } = props;
     return (
-      <InfoCard variant={variant} title="Systems">
-        <Progress />
-      </InfoCard>
+      <RelatedEntitiesCard
+        variant={variant}
+        title={title}
+        entityKind="System"
+        relationType={RELATION_HAS_PART}
+        columns={columns}
+        asRenderableEntities={asSystemEntities}
+        emptyMessage={t('hasSystemsCard.emptyMessage')}
+        emptyHelpLink={legacyHelpLink}
+        tableOptions={tableOptions}
+      />
     );
   }
 
-  if (error || !entities) {
-    return (
-      <InfoCard variant={variant} title="Systems">
-        <WarningPanel
-          severity="error"
-          title="Could not load systems"
-          message={<CodeSnippet text={`${error}`} language="text" />}
-        />
-      </InfoCard>
-    );
-  }
-
+  const {
+    title = t('hasSystemsCard.title'),
+    columnConfig = entityColumnPresets.system.columns,
+  } = props;
   return (
-    <EntityTable
-      title="Systems"
-      variant={variant}
-      emptyContent={
-        <div style={{ textAlign: 'center' }}>
-          <Typography variant="body1">
-            No system is part of this domain.
-          </Typography>
-          <Typography variant="body2">
-            <Link to="https://backstage.io/docs/features/software-catalog/descriptor-format#kind-system">
-              Learn how to change this.
-            </Link>
-          </Typography>
-        </div>
-      }
-      columns={columns}
-      entities={entities as SystemEntity[]}
+    <EntityRelationCard
+      title={title}
+      entityKind="System"
+      relationType={RELATION_HAS_PART}
+      columnConfig={columnConfig}
+      emptyState={{
+        message: t('hasSystemsCard.emptyMessage'),
+        helpLink: entityColumnPresets.system.helpLink,
+      }}
     />
   );
-};
+}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,19 @@
  * limitations under the License.
  */
 
+export { assertError, isError, isErrorWithName, toError } from './assertion';
+export type { ErrorLike } from './assertion';
 export {
   AuthenticationError,
   ConflictError,
+  ForwardedError,
   InputError,
   NotAllowedError,
   NotFoundError,
   NotModifiedError,
+  NotImplementedError,
+  ServiceUnavailableError,
 } from './common';
 export { CustomErrorBase } from './CustomErrorBase';
 export { ResponseError } from './ResponseError';
+export type { ConsumedResponse } from './types';

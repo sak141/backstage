@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,20 @@
  * limitations under the License.
  */
 
-import type { Transformer } from './index';
+import type { Transformer } from './transformer';
+import {
+  replaceGithubUrlType,
+  ScmIntegrationRegistry,
+} from '@backstage/integration';
 import FeedbackOutlinedIcon from '@material-ui/icons/FeedbackOutlined';
-import React from 'react';
-import ReactDOM from 'react-dom';
+import { createElement } from 'react';
+import parseGitUrl from 'git-url-parse';
+import { renderReactElement } from './renderReactElement';
 
 // requires repo
-export const addGitFeedbackLink = (configApi: any): Transformer => {
+export const addGitFeedbackLink = (
+  scmIntegrationsApi: ScmIntegrationRegistry,
+): Transformer => {
   return dom => {
     // attempting to use selectors that are more likely to be static as MkDocs updates over time
     const sourceAnchor = dom.querySelector(
@@ -31,42 +38,34 @@ export const addGitFeedbackLink = (configApi: any): Transformer => {
     if (!sourceAnchor || !sourceAnchor.href) {
       return dom;
     }
-    let gitHost = '';
 
     const sourceURL = new URL(sourceAnchor.href);
-    const githubHosts = configApi
-      .getConfigArray('integrations.github')
-      .map((integration: any) => integration.data.host);
-    const gitlabHosts = configApi
-      .getConfigArray('integrations.gitlab')
-      .map((integration: any) => integration.data.host);
+    const integration = scmIntegrationsApi.byUrl(sourceURL);
 
     // don't show if can't identify edit link hostname as a gitlab/github hosting
-    if (
-      githubHosts.includes(sourceURL.hostname) ||
-      sourceURL.origin.includes('github')
-    ) {
-      gitHost = 'github';
-    } else if (
-      gitlabHosts.includes(sourceURL.hostname) ||
-      sourceURL.origin.includes('gitlab')
-    ) {
-      gitHost = 'gitlab';
-    } else {
+    if (integration?.type !== 'github' && integration?.type !== 'gitlab') {
       return dom;
     }
 
     // topmost h1 only contains title for whole page
-    const title = (dom.querySelector('article>h1') as HTMLElement).childNodes[0]
-      .textContent;
+    const title =
+      (dom.querySelector('article>h1') as HTMLElement)?.childNodes[0]
+        .textContent || '';
     const issueTitle = encodeURIComponent(`Documentation Feedback: ${title}`);
     const issueDesc = encodeURIComponent(
       `Page source:\n${sourceAnchor.href}\n\nFeedback:`,
     );
-    const repoPath = sourceURL.pathname.split('/').slice(0, 3).join('/');
+
+    // Convert GitHub edit url to blob type so it can be parsed by git-url-parse correctly
+    const gitUrl =
+      integration?.type === 'github'
+        ? replaceGithubUrlType(sourceURL.href, 'blob')
+        : sourceURL.href;
+    const gitInfo = parseGitUrl(gitUrl);
+    const repoPath = `/${gitInfo.organization}/${gitInfo.name}`;
 
     const feedbackLink = sourceAnchor.cloneNode() as HTMLAnchorElement;
-    switch (gitHost) {
+    switch (integration?.type) {
       case 'gitlab':
         feedbackLink.href = `${sourceURL.origin}${repoPath}/issues/new?issue[title]=${issueTitle}&issue[description]=${issueDesc}`;
         break;
@@ -76,7 +75,7 @@ export const addGitFeedbackLink = (configApi: any): Transformer => {
       default:
         return dom;
     }
-    ReactDOM.render(React.createElement(FeedbackOutlinedIcon), feedbackLink);
+    renderReactElement(createElement(FeedbackOutlinedIcon), feedbackLink);
     feedbackLink.style.paddingLeft = '5px';
     feedbackLink.title = 'Leave feedback for this page';
     feedbackLink.id = 'git-feedback-link';

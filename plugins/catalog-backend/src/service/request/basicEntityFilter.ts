@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,26 +14,19 @@
  * limitations under the License.
  */
 
-import { EntitiesSearchFilter, EntityFilter } from '../../database';
+import { FilterPredicate } from '@backstage/filter-predicates';
 
 /**
- * Forms a full EntityFilter based on a single key-value(s) object.
+ * Forms a FilterPredicate based on a single key-value(s) object.
  */
 export function basicEntityFilter(
   items: Record<string, string | string[]>,
-): EntityFilter {
-  const filtersByKey: Record<string, EntitiesSearchFilter> = {};
-
-  for (const [key, value] of Object.entries(items)) {
+): FilterPredicate {
+  const predicates = Object.entries(items).map(([key, value]) => {
     const values = [value].flat();
-
-    const f =
-      key in filtersByKey
-        ? filtersByKey[key]
-        : (filtersByKey[key] = { key, matchValueIn: [] });
-
-    f.matchValueIn!.push(...values);
-  }
-
-  return { anyOf: [{ allOf: Object.values(filtersByKey) }] };
+    return (
+      values.length === 1 ? { [key]: values[0] } : { [key]: { $in: values } }
+    ) as FilterPredicate;
+  });
+  return predicates.length === 1 ? predicates[0] : { $all: predicates };
 }

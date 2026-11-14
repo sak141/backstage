@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,18 @@
  */
 
 export { AutocompleteTextField } from './AutocompleteTextField';
+export type {
+  AutocompleteTextFieldOption,
+  AutocompleteTextFieldProps,
+} from './AutocompleteTextField';
 export { PreparePullRequestForm } from './PreparePullRequestForm';
+export type { PreparePullRequestFormProps } from './PreparePullRequestForm';
 export { PreviewCatalogInfoComponent } from './PreviewCatalogInfoComponent';
+export type { PreviewCatalogInfoComponentProps } from './PreviewCatalogInfoComponent';
 export { PreviewPullRequestComponent } from './PreviewPullRequestComponent';
+export type { PreviewPullRequestComponentProps } from './PreviewPullRequestComponent';
 export { StepPrepareCreatePullRequest } from './StepPrepareCreatePullRequest';
+export type {
+  StepPrepareCreatePullRequestProps,
+  UnpackNestedValue,
+} from './StepPrepareCreatePullRequest';

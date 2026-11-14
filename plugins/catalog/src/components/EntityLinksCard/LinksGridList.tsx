@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,34 +14,35 @@
  * limitations under the License.
  */
 
-import { IconComponent } from '@backstage/core';
-import { GridList, GridListTile } from '@material-ui/core';
-import React from 'react';
+import { Grid, type Columns } from '@backstage/ui';
 import { IconLink } from './IconLink';
 import { ColumnBreakpoints } from './types';
 import { useDynamicColumns } from './useDynamicColumns';
+import { IconComponent } from '@backstage/core-plugin-api';
 
-export type LinksGridListItem = {
+export interface LinksGridListItem {
   href: string;
   text?: string;
   Icon?: IconComponent;
-};
+}
 
-type Props = {
+interface LinksGridListProps {
   items: LinksGridListItem[];
   cols?: ColumnBreakpoints | number;
-};
+}
 
-export const LinksGridList = ({ items, cols = undefined }: Props) => {
+export function LinksGridList(props: LinksGridListProps) {
+  const { items, cols = undefined } = props;
   const numOfCols = useDynamicColumns(cols);
 
   return (
-    <GridList cellHeight="auto" cols={numOfCols}>
+    <Grid.Root
+      columns={String(Math.min(Math.max(numOfCols, 1), 12)) as Columns}
+      gap="2"
+    >
       {items.map(({ text, href, Icon }, i) => (
-        <GridListTile key={i}>
-          <IconLink href={href} text={text ?? href} Icon={Icon} />
-        </GridListTile>
+        <IconLink key={i} href={href} text={text ?? href} Icon={Icon} />
       ))}
-    </GridList>
+    </Grid.Root>
   );
-};
+}

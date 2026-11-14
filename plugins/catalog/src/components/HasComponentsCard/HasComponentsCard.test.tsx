@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,33 +15,26 @@
  */
 
 import { Entity, RELATION_HAS_PART } from '@backstage/catalog-model';
-import { ApiProvider, ApiRegistry } from '@backstage/core';
 import {
-  CatalogApi,
   catalogApiRef,
   EntityProvider,
+  entityRouteRef,
 } from '@backstage/plugin-catalog-react';
-import { renderInTestApp } from '@backstage/test-utils';
-import { waitFor } from '@testing-library/react';
-import React from 'react';
+import { renderInTestApp, TestApiProvider } from '@backstage/test-utils';
+import { waitFor, screen } from '@testing-library/react';
+import { PropsWithChildren, ComponentType, ReactNode } from 'react';
 import { HasComponentsCard } from './HasComponentsCard';
+import { catalogApiMock } from '@backstage/plugin-catalog-react/testUtils';
 
 describe('<HasComponentsCard />', () => {
-  const catalogApi: jest.Mocked<CatalogApi> = {
-    getLocationById: jest.fn(),
-    getEntityByName: jest.fn(),
-    getEntities: jest.fn(),
-    addLocation: jest.fn(),
-    getLocationByEntity: jest.fn(),
-    removeEntityByUid: jest.fn(),
-  } as any;
-  let Wrapper: React.ComponentType;
+  const catalogApi = catalogApiMock.mock();
+  let Wrapper: ComponentType<PropsWithChildren<{}>>;
 
   beforeEach(() => {
-    const apis = ApiRegistry.with(catalogApiRef, catalogApi);
-
-    Wrapper = ({ children }: { children?: React.ReactNode }) => (
-      <ApiProvider apis={apis}>{children}</ApiProvider>
+    Wrapper = ({ children }: { children?: ReactNode }) => (
+      <TestApiProvider apis={[[catalogApiRef, catalogApi]]}>
+        {children}
+      </TestApiProvider>
     );
   });
 
@@ -58,17 +51,22 @@ describe('<HasComponentsCard />', () => {
       relations: [],
     };
 
-    const { getByText } = await renderInTestApp(
+    await renderInTestApp(
       <Wrapper>
         <EntityProvider entity={entity}>
           <HasComponentsCard />
         </EntityProvider>
       </Wrapper>,
+      {
+        mountedRoutes: {
+          '/catalog/:namespace/:kind/:name': entityRouteRef,
+        },
+      },
     );
 
-    expect(getByText('Components')).toBeInTheDocument();
+    expect(screen.getByText('Has components')).toBeInTheDocument();
     expect(
-      getByText(/No component is part of this system/i),
+      screen.getByText(/No component is part of this system/i),
     ).toBeInTheDocument();
   });
 
@@ -82,36 +80,41 @@ describe('<HasComponentsCard />', () => {
       },
       relations: [
         {
-          target: {
-            kind: 'Component',
-            namespace: 'my-namespace',
-            name: 'target-name',
-          },
+          targetRef: 'component:my-namespace/target-name',
           type: RELATION_HAS_PART,
         },
       ],
     };
-    catalogApi.getEntityByName.mockResolvedValue({
-      apiVersion: 'v1',
-      kind: 'Component',
-      metadata: {
-        name: 'target-name',
-        namespace: 'my-namespace',
-      },
-      spec: {},
+    catalogApi.getEntitiesByRefs.mockResolvedValue({
+      items: [
+        {
+          apiVersion: 'v1',
+          kind: 'Component',
+          metadata: {
+            name: 'target-name',
+            namespace: 'my-namespace',
+          },
+          spec: {},
+        },
+      ],
     });
 
-    const { getByText } = await renderInTestApp(
+    await renderInTestApp(
       <Wrapper>
         <EntityProvider entity={entity}>
           <HasComponentsCard />
         </EntityProvider>
       </Wrapper>,
+      {
+        mountedRoutes: {
+          '/catalog/:namespace/:kind/:name': entityRouteRef,
+        },
+      },
     );
 
     await waitFor(() => {
-      expect(getByText('Components')).toBeInTheDocument();
-      expect(getByText(/target-name/i)).toBeInTheDocument();
+      expect(screen.getByText('Has components')).toBeInTheDocument();
+      expect(screen.getByText(/target-name/i)).toBeInTheDocument();
     });
   });
 });

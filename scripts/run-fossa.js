@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,10 @@
 // This script generates an appropriate fossa config, and wraps the running
 // of `fossa analyze` in a retry loop as it frequently fails with a 502 error
 
-const { resolve: resolvePath, join: joinPath, basename } = require('path');
-const { promises: fs } = require('fs');
-const { execFile: execFileCb } = require('child_process');
-const { promisify } = require('util');
+const { resolve: resolvePath, join: joinPath, basename } = require('node:path');
+const { promises: fs } = require('node:fs');
+const { execFile: execFileCb } = require('node:child_process');
+const { promisify } = require('node:util');
 
 const execFile = promisify(execFileCb);
 

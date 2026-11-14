@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,77 +16,92 @@
 
 import { ComponentEntity, RELATION_HAS_PART } from '@backstage/catalog-model';
 import {
-  CodeSnippet,
-  InfoCard,
-  Link,
-  Progress,
-  WarningPanel,
-} from '@backstage/core';
-import { Typography } from '@material-ui/core';
+  InfoCardVariants,
+  TableColumn,
+  TableOptions,
+} from '@backstage/core-components';
 import {
-  EntityTable,
-  useEntity,
-  useRelatedEntities,
-} from '@backstage/plugin-catalog-react';
-import React from 'react';
+  EntityRelationCard,
+  EntityColumnConfig,
+  entityColumnPresets,
+} from '@backstage/plugin-catalog-react/alpha';
+import {
+  asComponentEntities,
+  componentEntityColumns,
+  componentEntityHelpLink as legacyHelpLink,
+  RelatedEntitiesCard,
+} from '../RelatedEntitiesCard';
+import { catalogTranslationRef } from '../../alpha/translation';
+import { useTranslationRef } from '@backstage/core-plugin-api/alpha';
 
-type Props = {
-  variant?: 'gridItem';
-};
+/** @public */
+export interface HasComponentsCardProps {
+  title?: string;
+  columnConfig?: EntityColumnConfig[];
+}
 
-const columns = [
-  EntityTable.columns.createEntityRefColumn({ defaultKind: 'component' }),
-  EntityTable.columns.createOwnerColumn(),
-  EntityTable.columns.createSpecTypeColumn(),
-  EntityTable.columns.createSpecLifecycleColumn(),
-  EntityTable.columns.createMetadataDescriptionColumn(),
-];
+/**
+ * Props for the legacy MUI-based rendering.
+ * @deprecated Use {@link HasComponentsCardProps} instead.
+ * @public
+ */
+export interface HasComponentsCardLegacyProps {
+  title?: string;
+  /** @deprecated Use `columnConfig` instead. */
+  variant?: InfoCardVariants;
+  /** @deprecated Use `columnConfig` instead. */
+  columns?: TableColumn<ComponentEntity>[];
+  /** @deprecated Use `columnConfig` instead. */
+  tableOptions?: TableOptions;
+}
 
-export const HasComponentsCard = ({ variant = 'gridItem' }: Props) => {
-  const { entity } = useEntity();
-  const { entities, loading, error } = useRelatedEntities(entity, {
-    type: RELATION_HAS_PART,
-    kind: 'Component',
-  });
+function isLegacyProps(
+  props: HasComponentsCardProps | HasComponentsCardLegacyProps,
+): props is HasComponentsCardLegacyProps {
+  return 'variant' in props || 'columns' in props || 'tableOptions' in props;
+}
 
-  if (loading) {
+export function HasComponentsCard(
+  props: HasComponentsCardProps | HasComponentsCardLegacyProps,
+) {
+  const { t } = useTranslationRef(catalogTranslationRef);
+
+  if (isLegacyProps(props)) {
+    const {
+      variant = 'gridItem',
+      title = t('hasComponentsCard.title'),
+      columns = componentEntityColumns,
+      tableOptions = {},
+    } = props;
     return (
-      <InfoCard variant={variant} title="Components">
-        <Progress />
-      </InfoCard>
+      <RelatedEntitiesCard
+        variant={variant}
+        title={title}
+        entityKind="Component"
+        relationType={RELATION_HAS_PART}
+        columns={columns}
+        emptyMessage={t('hasComponentsCard.emptyMessage')}
+        emptyHelpLink={legacyHelpLink}
+        asRenderableEntities={asComponentEntities}
+        tableOptions={tableOptions}
+      />
     );
   }
 
-  if (error || !entities) {
-    return (
-      <InfoCard variant={variant} title="Components">
-        <WarningPanel
-          severity="error"
-          title="Could not load components"
-          message={<CodeSnippet text={`${error}`} language="text" />}
-        />
-      </InfoCard>
-    );
-  }
-
+  const {
+    title = t('hasComponentsCard.title'),
+    columnConfig = entityColumnPresets.component.columns,
+  } = props;
   return (
-    <EntityTable
-      title="Components"
-      variant={variant}
-      emptyContent={
-        <div style={{ textAlign: 'center' }}>
-          <Typography variant="body1">
-            No component is part of this system.
-          </Typography>
-          <Typography variant="body2">
-            <Link to="https://backstage.io/docs/features/software-catalog/descriptor-format#kind-component">
-              Learn how to change this.
-            </Link>
-          </Typography>
-        </div>
-      }
-      columns={columns}
-      entities={entities as ComponentEntity[]}
+    <EntityRelationCard
+      title={title}
+      entityKind="Component"
+      relationType={RELATION_HAS_PART}
+      columnConfig={columnConfig}
+      emptyState={{
+        message: t('hasComponentsCard.emptyMessage'),
+        helpLink: entityColumnPresets.component.helpLink,
+      }}
     />
   );
-};
+}

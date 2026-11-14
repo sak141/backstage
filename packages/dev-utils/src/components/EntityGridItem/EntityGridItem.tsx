@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,10 @@
 
 import { Entity } from '@backstage/catalog-model';
 import { EntityProvider } from '@backstage/plugin-catalog-react';
-import { BackstageTheme } from '@backstage/theme';
-import { Grid, GridProps, makeStyles } from '@material-ui/core';
-import React from 'react';
+import Grid, { GridProps } from '@material-ui/core/Grid';
+import { Theme, makeStyles } from '@material-ui/core/styles';
 
-const useStyles = makeStyles<BackstageTheme, { entity: Entity }>(theme => ({
+const useStyles = makeStyles<Theme, { entity: Entity }>(theme => ({
   root: ({ entity }) => ({
     position: 'relative',
 
@@ -34,11 +33,11 @@ const useStyles = makeStyles<BackstageTheme, { entity: Entity }>(theme => ({
   }),
 }));
 
-export const EntityGridItem = ({
-  entity,
-  classes,
-  ...rest
-}: Omit<GridProps, 'item' | 'container'> & { entity: Entity }): JSX.Element => {
+/** @public */
+export const EntityGridItem = (
+  props: Omit<GridProps, 'item' | 'container'> & { entity: Entity },
+): JSX.Element => {
+  const { entity, classes, ...rest } = props;
   const itemClasses = useStyles({ entity });
 
   return (

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Spotify AB
+ * Copyright 2020 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,58 @@
  * limitations under the License.
  */
 
-export {
-  techdocsPlugin,
-  techdocsPlugin as plugin,
-  TechdocsPage,
-  EntityTechdocsContent,
-  DocsCardGrid,
-  DocsTable,
-  TechDocsCustomHome,
-  TechDocsReaderPage,
-} from './plugin';
-export { Router, EmbeddedDocsRouter } from './Router';
-export * from './reader';
+/**
+ * The Backstage plugin that renders technical documentation for your components
+ *
+ * @packageDocumentation
+ */
+
+import {
+  TechDocsEntityMetadata,
+  TechDocsMetadata,
+} from '@backstage/plugin-techdocs-react';
+
+export * from './types';
 export * from './api';
-export type { PanelType } from './home/components/TechDocsCustomHome';
+export * from './client';
+export * from './reader';
+export * from './search';
+export * from './home';
+export {
+  EntityTechdocsContent,
+  TechDocsCustomHome,
+  TechDocsIndexPage,
+  TechdocsPage,
+  TechDocsReaderPage,
+  TechDocsSearchResultListItem,
+  techdocsPlugin as plugin,
+  techdocsPlugin,
+} from './plugin';
+export {
+  isTechDocsAvailable,
+  LegacyEmbeddedDocsRouter as EmbeddedDocsRouter,
+  Router,
+} from './Router';
+
+export type { TechDocsSearchResultListItemProps } from './search/components/TechDocsSearchResultListItem';
+
+/**
+ * @deprecated Import from `@backstage/plugin-techdocs-react` instead
+ *
+ * @public
+ */
+type DeprecatedTechDocsMetadata = TechDocsMetadata;
+
+/**
+ * @deprecated Import from `@backstage/plugin-techdocs-react` instead
+ *
+ * @public
+ */
+type DeprecatedTechDocsEntityMetadata = TechDocsEntityMetadata;
+
+export type {
+  DeprecatedTechDocsEntityMetadata as TechDocsEntityMetadata,
+  DeprecatedTechDocsMetadata as TechDocsMetadata,
+};
+
+export * from './overridableComponents';

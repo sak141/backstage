@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,9 +27,7 @@ describe('parseEntityFilterParams', () => {
 
   it('supports single-string format', () => {
     const result = parseEntityFilterParams({ filter: 'a=1' })!;
-    expect(result).toEqual({
-      anyOf: [{ allOf: [{ key: 'a', matchValueIn: ['1'] }] }],
-    });
+    expect(result).toEqual({ a: '1' });
   });
 
   it('supports array-of-strings format', () => {
@@ -37,10 +35,7 @@ describe('parseEntityFilterParams', () => {
       filter: ['a=1', 'b=2'],
     });
     expect(result).toEqual({
-      anyOf: [
-        { allOf: [{ key: 'a', matchValueIn: ['1'] }] },
-        { allOf: [{ key: 'b', matchValueIn: ['2'] }] },
-      ],
+      $any: [{ a: '1' }, { b: '2' }],
     });
   });
 
@@ -49,13 +44,10 @@ describe('parseEntityFilterParams', () => {
       filter: ['a=1', 'b=2,b=3,c=4'],
     });
     expect(result).toEqual({
-      anyOf: [
-        { allOf: [{ key: 'a', matchValueIn: ['1'] }] },
+      $any: [
+        { a: '1' },
         {
-          allOf: [
-            { key: 'b', matchValueIn: ['2', '3'] },
-            { key: 'c', matchValueIn: ['4'] },
-          ],
+          $all: [{ b: { $in: ['2', '3'] } }, { c: '4' }],
         },
       ],
     });
@@ -69,31 +61,27 @@ describe('parseEntityFilterParams', () => {
 describe('parseEntityFilterString', () => {
   it('works for the happy path', () => {
     expect(parseEntityFilterString('')).toBeUndefined();
-    expect(parseEntityFilterString('a=1,b=2,a=3')).toEqual([
-      { key: 'a', matchValueIn: ['1', '3'] },
-      { key: 'b', matchValueIn: ['2'] },
+    expect(parseEntityFilterString('a=1,b=2,a=3,c,d=')).toEqual([
+      { key: 'a', values: ['1', '3'] },
+      { key: 'b', values: ['2'] },
+      { key: 'c' },
+      { key: 'd', values: [''] },
     ]);
   });
 
   it('trims values', () => {
     expect(parseEntityFilterString(' a = 1 , b = 2 , a = 3 ')).toEqual([
-      { key: 'a', matchValueIn: ['1', '3'] },
-      { key: 'b', matchValueIn: ['2'] },
+      { key: 'a', values: ['1', '3'] },
+      { key: 'b', values: ['2'] },
     ]);
   });
 
   it('rejects malformed strings', () => {
-    expect(() => parseEntityFilterString('x=2,a=')).toThrow(
-      "Invalid filter, 'a=' is not a valid statement (expected a string on the form a=b)",
-    );
     expect(() => parseEntityFilterString('x=2,=a')).toThrow(
-      "Invalid filter, '=a' is not a valid statement (expected a string on the form a=b)",
+      "Invalid filter, '=a' is not a valid statement (expected a string on the form a=b or a= or a)",
     );
     expect(() => parseEntityFilterString('x=2,=')).toThrow(
-      "Invalid filter, '=' is not a valid statement (expected a string on the form a=b)",
-    );
-    expect(() => parseEntityFilterString('x=2,a')).toThrow(
-      "Invalid filter, 'a' is not a valid statement (expected a string on the form a=b)",
+      "Invalid filter, '=' is not a valid statement (expected a string on the form a=b or a= or a)",
     );
   });
 });

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Spotify AB
+ * Copyright 2021 The Backstage Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import {
   RELATION_PROVIDES_API,
   RELATION_PART_OF,
   stringifyEntityRef,
-  ENTITY_DEFAULT_NAMESPACE,
+  DEFAULT_NAMESPACE,
   parseEntityRef,
 } from '@backstage/catalog-model';
 import {
@@ -29,44 +29,58 @@ import {
   getEntityRelations,
   useEntity,
 } from '@backstage/plugin-catalog-react';
+import Box from '@material-ui/core/Box';
+import Typography from '@material-ui/core/Typography';
+import { makeStyles, useTheme } from '@material-ui/core/styles';
+import ZoomOutMap from '@material-ui/icons/ZoomOutMap';
+import useAsync from 'react-use/esm/useAsync';
+
 import {
   DependencyGraph,
   DependencyGraphTypes,
   InfoCard,
   Progress,
-  useApi,
   ResponseErrorPanel,
   Link,
-  useRouteRef,
-} from '@backstage/core';
-import { Box, makeStyles, Typography } from '@material-ui/core';
-import ZoomOutMap from '@material-ui/icons/ZoomOutMap';
-import React from 'react';
-import { useAsync } from 'react-use';
-import { BackstageTheme } from '@backstage/theme';
+} from '@backstage/core-components';
 
-const useStyles = makeStyles((theme: BackstageTheme) => ({
-  domainNode: {
-    fill: theme.palette.primary.main,
-    stroke: theme.palette.border,
-  },
-  systemNode: {
-    fill: 'coral',
-    stroke: theme.palette.border,
-  },
-  componentNode: {
-    fill: 'yellowgreen',
-    stroke: theme.palette.border,
-  },
-  apiNode: {
-    fill: theme.palette.gold,
-    stroke: theme.palette.border,
-  },
-  resourceNode: {
-    fill: 'grey',
-    stroke: theme.palette.border,
-  },
-}));
+import { useApi, useRouteRef } from '@backstage/core-plugin-api';
+import { catalogTranslationRef } from '../../alpha/translation';
+import { useTranslationRef } from '@backstage/core-plugin-api/alpha';
+
+/** @public */
+export type SystemDiagramCardClassKey =
+  | 'domainNode'
+  | 'systemNode'
+  | 'componentNode'
+  | 'apiNode'
+  | 'resourceNode';
+
+const useStyles = makeStyles(
+  theme => ({
+    domainNode: {
+      fill: theme.palette.primary.main,
+      stroke: theme.palette.border,
+    },
+    systemNode: {
+      fill: 'coral',
+      stroke: theme.palette.border,
+    },
+    componentNode: {
+      fill: 'yellowgreen',
+      stroke: theme.palette.border,
+    },
+    apiNode: {
+      fill: theme.palette.gold,
+      stroke: theme.palette.border,
+    },
+    resourceNode: {
+      fill: 'grey',
+      stroke: theme.palette.border,
+    },
+  }),
+  { name: 'PluginCatalogSystemDiagramCard' },
+);
 
 // Simplifies the diagram output by hiding the default namespace and kind
 function readableEntityName(
@@ -79,8 +93,8 @@ function readableEntityName(
       },
 ): string {
   return stringifyEntityRef(ref)
-    .toLocaleLowerCase('en-US')
-    .replace(`:${ENTITY_DEFAULT_NAMESPACE}/`, ':')
+    .toLowerCase()
+    .replace(`:${DEFAULT_NAMESPACE}/`, ':')
     .split(':')[1];
 }
 
@@ -89,6 +103,11 @@ function RenderNode(props: DependencyGraphTypes.RenderNodeProps<any>) {
   const catalogEntityRoute = useRouteRef(entityRouteRef);
   const kind = props.node.kind || 'Component';
   const ref = parseEntityRef(props.node.id);
+  const MAX_NAME_LENGTH = 20;
+  const truncatedNodeName =
+    props.node.name.length < MAX_NAME_LENGTH
+      ? props.node.name
+      : `${props.node.name.slice(0, MAX_NAME_LENGTH)}...`;
   let nodeClass = classes.componentNode;
 
   switch (kind) {
@@ -128,7 +147,7 @@ function RenderNode(props: DependencyGraphTypes.RenderNodeProps<any>) {
           alignmentBaseline="baseline"
           style={{ fontWeight: 'bold' }}
         >
-          {props.node.name}
+          {truncatedNodeName}
         </text>
       </Link>
 
@@ -145,19 +164,27 @@ function RenderNode(props: DependencyGraphTypes.RenderNodeProps<any>) {
  */
 export function SystemDiagramCard() {
   const { entity } = useEntity();
+  const theme = useTheme();
+  const { t } = useTranslationRef(catalogTranslationRef);
   const currentSystemName = entity.metadata.name;
   const currentSystemNode = stringifyEntityRef(entity);
   const systemNodes = new Array<{ id: string; kind: string; name: string }>();
   const systemEdges = new Array<{ from: string; to: string; label: string }>();
 
   const catalogApi = useApi(catalogApiRef);
-  const { loading, error, value: catalogResponse } = useAsync(() => {
+  const {
+    loading,
+    error,
+    value: catalogResponse,
+  } = useAsync(() => {
     return catalogApi.getEntities({
       filter: {
         kind: ['Component', 'API', 'Resource', 'System', 'Domain'],
         'spec.system': [
           currentSystemName,
-          `${ENTITY_DEFAULT_NAMESPACE}/${currentSystemName}`,
+          `${
+            entity.metadata.namespace || DEFAULT_NAMESPACE
+          }/${currentSystemName}`,
         ],
       },
     });
@@ -186,7 +213,7 @@ export function SystemDiagramCard() {
     systemEdges.push({
       from: currentSystemNode,
       to: stringifyEntityRef(foundDomain),
-      label: 'part of',
+      label: t('systemDiagramCard.edgeLabels.partOf'),
     }),
   );
 
@@ -210,7 +237,7 @@ export function SystemDiagramCard() {
         systemEdges.push({
           from: stringifyEntityRef(catalogItem),
           to: stringifyEntityRef(foundRelation),
-          label: 'part of',
+          label: t('systemDiagramCard.edgeLabels.partOf'),
         }),
       );
 
@@ -222,7 +249,7 @@ export function SystemDiagramCard() {
         systemEdges.push({
           from: stringifyEntityRef(catalogItem),
           to: stringifyEntityRef(foundRelation),
-          label: 'provides',
+          label: t('systemDiagramCard.edgeLabels.provides'),
         }),
       );
 
@@ -234,7 +261,7 @@ export function SystemDiagramCard() {
         systemEdges.push({
           from: stringifyEntityRef(catalogItem),
           to: stringifyEntityRef(foundRelation),
-          label: 'depends on',
+          label: t('systemDiagramCard.edgeLabels.dependsOn'),
         }),
       );
     }
@@ -247,21 +274,23 @@ export function SystemDiagramCard() {
   }
 
   return (
-    <InfoCard title="System Diagram">
+    <InfoCard title={t('systemDiagramCard.title')}>
       <DependencyGraph
         nodes={systemNodes}
         edges={systemEdges}
         nodeMargin={10}
         direction={DependencyGraphTypes.Direction.BOTTOM_TOP}
         renderNode={RenderNode}
+        paddingX={theme.spacing(4)}
+        paddingY={theme.spacing(4)}
       />
       <Box m={1} />
       <Typography
         variant="caption"
         style={{ display: 'block', textAlign: 'right' }}
       >
-        <ZoomOutMap style={{ verticalAlign: 'bottom' }} /> Use pinch &amp; zoom
-        to move around the diagram.
+        <ZoomOutMap style={{ verticalAlign: 'bottom' }} />
+        {t('systemDiagramCard.description')}
       </Typography>
     </InfoCard>
   );
